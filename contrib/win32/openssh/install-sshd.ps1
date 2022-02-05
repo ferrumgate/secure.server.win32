@@ -2,6 +2,7 @@
 # @friism - Fixed issue with invalid SDDL on Set-Acl
 # @manojampalam - removed ntrights.exe dependency
 # @bingbing8 - removed secedit.exe dependency
+# @tessgauthier - added permissions check for %programData%/ssh
 
 $ErrorActionPreference = 'Stop'
 
@@ -82,6 +83,13 @@ $moduliPath = Join-Path $PSScriptRoot "moduli"
 if (Test-Path $moduliPath -PathType Leaf)
 {
     Repair-ModuliFilePermission -FilePath $moduliPath @psBoundParameters -confirm:$false
+}
+
+# If %programData%/ssh folder already exists, verify and, if necessary and approved by user, fix permissions 
+$sshProgDataPath = Join-Path $env:ProgramData "ssh"
+if (Test-Path $sshProgDataPath)
+{
+    Repair-SSHFolderPermission -sshProgDataPath $sshProgDataPath
 }
 
 #register etw provider
