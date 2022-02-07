@@ -24,7 +24,7 @@ if ($TestFilePath) {
 	# convert to bash format
 	$TestFilePath = $TestFilePath -replace "\\","/"
 }
-$OriginalUserPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::User) 
+$OriginalSystemPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) 
 
 # Make sure config.h exists. It is used in some bashstests (Ex - sftp-glob.sh, cfgparse.sh)
 # first check in $BashTestsPath folder. If not then it's parent folder. If not then in the $OpenSSHBinPath
@@ -104,7 +104,7 @@ try
 
 	# Prepend shell path to User PATH in the registry so that SSHD authenticated child process can inherit it.
 	# We can probably delete the logic above to add it to the process PATH, but there is no need.
-	[System.Environment]::SetEnvironmentVariable('Path', $TEST_SHELL_DIR + ";" + $OriginalUserPath, [System.EnvironmentVariableTarget]::User)
+	[System.Environment]::SetEnvironmentVariable('Path', $TEST_SHELL_DIR + ";" + $OriginalSystemPath, [System.EnvironmentVariableTarget]::Machine)
 
 	$BashTestsPath = $BashTestsPath -replace "\\","/"
 	Push-location $BashTestsPath
@@ -260,7 +260,7 @@ try
 finally
 {
 	# Restore User Path variable in the registry once the tests finish running.
-	[System.Environment]::SetEnvironmentVariable('Path', $OriginalUserPath, [System.EnvironmentVariableTarget]::User)
+	[System.Environment]::SetEnvironmentVariable('Path', $OriginalSystemPath, [System.EnvironmentVariableTarget]::Machine)
 	# remove temp test directory
 	if (!$SkipCleanup)
 	{

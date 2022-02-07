@@ -196,14 +196,14 @@ setup_session_user_vars(wchar_t* profile_path)
 				}
 			}
 
-			/* Path is a special case. The System Path value is appended to the User Path value */
+			/* Path is a special case. The System Path value is preppended to the User Path value */
 			if (_wcsicmp(name, L"PATH") == 0 && j == 1) {
 				if ((required = GetEnvironmentVariableW(L"PATH", NULL, 0)) != 0) {
-					size_t user_path_size = wcslen(to_apply);
-					path_value = xmalloc((required + user_path_size + 2) * 2);
-					GOTO_CLEANUP_ON_ERR(memcpy_s(path_value, (user_path_size + 1) * 2, to_apply, (user_path_size + 1) * 2));
-					path_value[user_path_size] = L';';
-					GetEnvironmentVariableW(L"PATH", path_value + user_path_size + 1, required);
+					size_t user_path_size = wcslen(to_apply) + 1;
+					path_value = xmalloc((required + user_path_size) * 2);
+					GetEnvironmentVariableW(L"PATH", path_value, required);
+					path_value[required - 1] = L';';
+					GOTO_CLEANUP_ON_ERR(memcpy_s(path_value + required, user_path_size * 2, to_apply, user_path_size * 2));
 					to_apply = path_value;
 				}
 			}
