@@ -1773,6 +1773,22 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		if (!wrerr && (!exists || S_ISREG(stb.st_mode)) &&
 		    ftruncate(ofd, size) != 0)
 			note_err("%s: truncate: %s", np, strerror(errno));
+#ifdef WINDOWS
+		/* When p flag is used, set timestamps before setting the
+		 * mode to avoid error caused by when the mode is set to
+		 * "read-only" and timestamps can't be set.*/
+		if (setimes && !wrerr) {
+			setimes = 0;
+			if (utimes(np, tv) == -1) {
+				note_err("%s: set times: %s",
+					np, strerror(errno));
+			}
+		}
+		/* When the file descriptor (ofd) is closed, the Accessed
+		 * timestamp gets updated. Therefore, when the p flag is 
+		 * used, the inherited Accessed timestamp is overwritten.
+		 * However, the Modify timestamp is inherited correctly.*/
+#endif
 		if (pflag) {
 			if (exists || omode != mode)
 #ifdef HAVE_FCHMOD
@@ -1799,6 +1815,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		(void) response();
 		if (showprogress)
 			stop_progress_meter();
+#ifndef WINDOWS
 		if (setimes && !wrerr) {
 			setimes = 0;
 			if (utimes(np, tv) == -1) {
@@ -1806,6 +1823,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 				    np, strerror(errno));
 			}
 		}
+#endif
 		/* If no error was noted then signal success for this file */
 		if (note_err(NULL) == 0)
 			(void) atomicio(vwrite, remout, "", 1);
