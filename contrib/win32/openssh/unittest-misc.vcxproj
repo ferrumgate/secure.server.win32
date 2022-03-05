@@ -36,11 +36,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D901596E-76C7-4608-9CFA-2B42A9FD7250}</ProjectGuid>
+    <ProjectGuid>{0B527504-2AF5-4E6E-A84F-10BADFAEDA88}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Win32OpenSSH</RootNamespace>
     <WindowsTargetPlatformVersion>$(WindowsSDKVersion)</WindowsTargetPlatformVersion>
-    <ProjectName>unittest-bitmap</ProjectName>
+    <ProjectName>unittest-misc</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -128,28 +128,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
@@ -157,28 +157,28 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(OpenSSH-Bin-Path)$(Platform)\$(Configuration)\$(TargetName)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\$(TargetName)\</IntDir>
-    <TargetName>unittest-bitmap</TargetName>
+    <TargetName>unittest-misc</TargetName>
     <IncludePath>$(OpenSSH-Src-Path)contrib\win32\win32compat\inc;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -378,7 +378,25 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\bitmap\tests.c">
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\tests.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_parse.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_expand.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_convtime.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_argv.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_strdelim.c">
+      <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\misc\test_hpdelim.c">
       <ExcludedFromBuild Condition="$(UseOpenSSL)==false">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="$(OpenSSH-Src-Path)regress\unittests\test_helper\test_helper.c">

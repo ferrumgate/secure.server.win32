@@ -1598,7 +1598,11 @@ process_extended_expand(u_int32_t id)
 		path = npath;
 	}
 	verbose("expand \"%s\"", path);
+#ifdef WINDOWS
+	if (realpath(path, resolvedname) == NULL) {
+#else
 	if (sftp_realpath(path, resolvedname) == NULL) {
+#endif
 		send_status(id, errno_to_portable(errno));
 		goto out;
 	}

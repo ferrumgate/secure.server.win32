@@ -769,9 +769,14 @@ parse_dest_constraint(const char *s, struct dest_constraint ***dcp,
 static void
 usage(void)
 {
+#ifdef WINDOWS
+	fprintf(stderr,
+"usage: ssh-add [-cDdKkLlqvXx] [-E fingerprint_hash] [-S provider] [-t life]\n"
+#else
 	fprintf(stderr,
 "usage: ssh-add [-cDdKkLlqvXx] [-E fingerprint_hash] [-H hostkey_file]\n"
 "               [-h destination_constraint] [-S provider] [-t life]\n"
+#endif
 #ifdef WITH_XMSS
 "               [-M maxsign] [-m minleft]\n"
 #endif
@@ -822,7 +827,11 @@ main(int argc, char **argv)
 
 	skprovider = getenv("SSH_SK_PROVIDER");
 
+#ifdef WINDOWS
+	while ((ch = getopt(argc, argv, "vkKlLcdDTxXE:e:M:m:qs:S:t:")) != -1) {
+#else
 	while ((ch = getopt(argc, argv, "vkKlLcdDTxXE:e:h:H:M:m:qs:S:t:")) != -1) {
+#endif
 		switch (ch) {
 		case 'v':
 			if (log_level == SYSLOG_LEVEL_INFO)
@@ -835,12 +844,14 @@ main(int argc, char **argv)
 			if (fingerprint_hash == -1)
 				fatal("Invalid hash algorithm \"%s\"", optarg);
 			break;
+#ifndef WINDOWS
 		case 'H':
 			stringlist_append(&hostkey_files, optarg);
 			break;
 		case 'h':
 			stringlist_append(&dest_constraint_strings, optarg);
 			break;
+#endif
 		case 'k':
 			key_only = 1;
 			break;

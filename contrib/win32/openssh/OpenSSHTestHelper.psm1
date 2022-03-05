@@ -15,7 +15,7 @@ $PubKeyUser = "sshtest_pubkeyuser"
 $PasswdUser = "sshtest_passwduser"
 $AdminUser = "sshtest_adminuser"
 $NonAdminUser = "sshtest_nonadminuser"
-$OpenSSHTestAccountsPassword = "P@ssw0rd_1"
+$OpenSSHTestAccountsPassword = "Bulldog_123456"
 $OpenSSHTestAccounts = $Script:SSOUser, $Script:PubKeyUser, $Script:PasswdUser, $Script:AdminUser, $Script:NonAdminUser
 $SSHDTestSvcName = "sshdTestSvc"
 
@@ -206,6 +206,8 @@ WARNING: Following changes will be made to OpenSSH configuration
         }
         catch
         {
+            write-host "user:$user"
+            write-host "passwd:$($Script:OpenSSHTestAccountsPassword)"
             #only add the local user when it does not exists on the machine        
             net user $user $Script:OpenSSHTestAccountsPassword /ADD 2>&1 >> $Script:TestSetupLogFile
         }
@@ -589,7 +591,7 @@ function Get-UnitTestDirectory
     param
     (
         [ValidateSet('Debug', 'Release')]
-        [string]$Configuration = "Release",
+        [string]$Configuration = "Debug",
 
         [ValidateSet('x86', 'x64', '')]
         [string]$NativeHostArch = ""

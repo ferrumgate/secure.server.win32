@@ -2248,9 +2248,13 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 	interactive = !batchmode && isatty(STDIN_FILENO);
 	err = 0;
 	for (;;) {
+#ifdef WINDOWS
+	void (*handler)(int);
+	handler = interactive ? read_interrupt : killchild;
+	ssh_signal(SIGINT, handler);
+#else
 		struct sigaction sa;
 
-		interrupted = 0;
 		memset(&sa, 0, sizeof(sa));
 		sa.sa_handler = interactive ? read_interrupt : killchild;
 		if (sigaction(SIGINT, &sa, NULL) == -1) {
@@ -2258,6 +2262,9 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 			    strerror(errno));
 			break;
 		}
+#endif
+		
+		interrupted = 0;
 		if (el == NULL) {
 			if (interactive)
 				printf("sftp> ");

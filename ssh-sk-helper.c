@@ -263,8 +263,8 @@ process_load_resident(struct sshbuf *req)
 
 	for (i = 0; i < nsrks; i++) {
 #ifdef WINDOWS
-		if (keys[i]->sk_application == NULL ||
-		    strncmp(keys[i]->sk_application, "ssh:", 4) != 0)
+		if (srks[i]->key->sk_application == NULL ||
+		    strncmp(srks[i]->key->sk_application, "ssh:", 4) != 0)
 			fatal("%s: non-ssh application", __progname);
 #endif
 		debug_f("key %zu %s %s uidlen %zu", i,

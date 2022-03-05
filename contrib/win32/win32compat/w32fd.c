@@ -697,6 +697,9 @@ w32_fcntl(int fd, int cmd, ... /* arg */)
 	case F_SETFD:
 		ret = w32_io_process_fd_flags(fd_table.w32_ios[fd], va_arg(valist, int));
 		break;
+	case F_DUPFD:
+		ret = dup(fd);
+		break;
 	default:
 		errno = EINVAL;
 		debug3("fcntl - ERROR not supported cmd:%d", cmd);
