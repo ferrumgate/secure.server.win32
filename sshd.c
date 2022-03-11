@@ -1721,7 +1721,9 @@ server_accept_loop(int *sock_in, int *sock_out, int *newsock, int *config_s)
 				startup_pipe = -1;
 				pid = getpid();
 				if (rexec_flag) {
+#ifndef WINDOWS
 					send_rexec_state(config_s[0], cfg);
+#endif
 					close(config_s[0]);
 				}
 				free(pfd);

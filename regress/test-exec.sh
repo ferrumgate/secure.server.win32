@@ -3,13 +3,6 @@
 
 #SUDO=sudo
 
-if [ "x$TEST_WINDOWS_SSH" != "x" ]; then
-	os="windows"
-	USER=$TEST_SSH_USER
-	USER_DOMAIN=$TEST_SSH_USER_DOMAIN
-	LOGNAME=$USER
-fi
-
 if [ ! -x "$TEST_SSH_ELAPSED_TIMES" ]; then
 	STARTTIME=`date '+%s'`
 fi
@@ -47,34 +40,40 @@ fi
 unset SSH_AUTH_SOCK
 
 # Portable-specific settings.
-
-if [ -x /usr/ucb/whoami ]; then
-	USER=`/usr/ucb/whoami`
-elif whoami >/dev/null 2>&1; then
-	USER=`whoami`
-elif logname >/dev/null 2>&1; then
-	USER=`logname`
+if [ "x$TEST_WINDOWS_SSH" != "x" ]; then
+	os="windows"
+	USER=$TEST_SSH_USER
+	USER_DOMAIN=$TEST_SSH_USER_DOMAIN
+	LOGNAME=$USER
 else
-	USER=`id -un`
-fi
-if test -z "$LOGNAME"; then
-	LOGNAME="${USER}"
-	export LOGNAME
-fi
+	if [ -x /usr/ucb/whoami ]; then
+		USER=`/usr/ucb/whoami`
+	elif whoami >/dev/null 2>&1; then
+		USER=`whoami`
+	elif logname >/dev/null 2>&1; then
+		USER=`logname`
+	else
+		USER=`id -un`
+	fi
+	if test -z "$LOGNAME"; then
+		LOGNAME="${USER}"
+		export LOGNAME
+	fi
 
-# Unbreak GNU head(1)
-_POSIX2_VERSION=199209
-export _POSIX2_VERSION
+	# Unbreak GNU head(1)
+	_POSIX2_VERSION=199209
+	export _POSIX2_VERSION
 
-case `uname -s 2>/dev/null` in
-OSF1*)
-	BIN_SH=xpg4
-	export BIN_SH
-	;;
-CYGWIN*)
-	os=cygwin
-	;;
-esac
+	case `uname -s 2>/dev/null` in
+	OSF1*)
+		BIN_SH=xpg4
+		export BIN_SH
+		;;
+	CYGWIN*)
+		os=cygwin
+		;;
+	esac
+fi
 
 # If configure tells us to use a different egrep, create a wrapper function
 # to call it.  This means we don't need to change all the tests that depend
@@ -528,6 +527,7 @@ cat << EOF > $OBJ/sshd_config
 	PidFile			$PIDFILE
 	AuthorizedKeysFile	$OBJ/authorized_keys_%u
 	LogLevel		DEBUG3
+	SyslogFacility LOCAL0
 	AcceptEnv		_XXX_TEST_*
 	AcceptEnv		_XXX_TEST
 	Subsystem	sftp	$SFTPSERVER

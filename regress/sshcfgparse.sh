@@ -171,8 +171,14 @@ Host *
     TunnelDevice 1:2
 EOD
 f=`${SSH} -GF $OBJ/ssh_config.0 -oipqos=cs1 host | awk '/^ipqos /{print$2}'`
+if [ "$os" == "windows" ]; then
+	f=${f/$'\r'/} # remove CR (carriage return)
+fi
 expect_result_present "$f" "cs1"
 f=`${SSH} -GF $OBJ/ssh_config.0 -otunneldevice=3:4 host | awk '/^tunneldevice /{print$2}'`
+if [ "$os" == "windows" ]; then
+	f=${f/$'\r'/} # remove CR (carriage return)
+fi
 expect_result_present "$f" "3:4"
 
 # cleanup

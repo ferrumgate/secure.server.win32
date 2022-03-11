@@ -6,16 +6,19 @@ tid="hostkey agent"
 rm -f $OBJ/agent-key.* $OBJ/ssh_proxy.orig $OBJ/known_hosts.orig $OBJ/agent-ca*
 
 trace "start agent"
-eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
-r=$?
-[ $r -ne 0 ] && fatal "could not start ssh-agent: exit code $r"
 
-grep -vi 'hostkey' $OBJ/sshd_proxy > $OBJ/sshd_proxy.orig
 if [ "$os" == "windows" ]; then
 	# Windows ssh-agent doesn't support "-s" option so we need to set SSH_AUTH_SOCK env here.
-	SSH_AUTH_SOCK="\\\\.\\pipe\\openssh-ssh-agent"
+	SSH_AUTH_SOCK="\\\\\\.\\pipe\\openssh-ssh-agent"
+	powershell.exe -c "net start ssh-agent"
+	powershell.exe -c "Get-Process -Name ssh*"
 	${SSHADD} -D
+else
+	eval `${SSHAGENT} ${EXTRA_AGENT_ARGS} -s` > /dev/null
+	r=$?
+	[ $r -ne 0 ] && fatal "could not start ssh-agent: exit code $r"
 fi
+grep -vi 'hostkey' $OBJ/sshd_proxy > $OBJ/sshd_proxy.orig
 echo "HostKeyAgent $SSH_AUTH_SOCK" >> $OBJ/sshd_proxy.orig
 
 trace "make CA key"
@@ -54,12 +57,15 @@ for k in $SSH_KEYTYPES ; do
 	fi
 done
 
-SSH_CERTTYPES=`ssh -Q key-sig | grep 'cert-v01@openssh.com'`
+SSH_CERTTYPES=`ssh -Q key-sig | grep 'cert-v01@openssh.com' | maybe_filter_sk`
 
 # Prepare sshd_proxy for certificates.
 cp $OBJ/sshd_proxy.orig $OBJ/sshd_proxy
 HOSTKEYALGS=""
 for k in $SSH_CERTTYPES ; do
+	if [ "$os" == "windows" ]; then
+		k=${k/$'\r'/} # Remove CR (carriage return)
+	fi
 	test -z "$HOSTKEYALGS" || HOSTKEYALGS="${HOSTKEYALGS},"
 	HOSTKEYALGS="${HOSTKEYALGS}${k}"
 done
@@ -87,10 +93,12 @@ for k in $SSH_CERTTYPES ; do
 	fi
 done
 
+trace "kill agent"
 if [ "$os" == "windows" ]; then
 	#keys added through ssh-add are stored in windows registry so delete them.
 	${SSHADD} -D
+	powershell.exe -c "net stop ssh-agent"
+else
+	${SSHAGENT} -k > /dev/null
 fi
-trace "kill agent"
-${SSHAGENT} -k > /dev/null
 

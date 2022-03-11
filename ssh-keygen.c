@@ -3088,6 +3088,7 @@ sk_suffix(const char *application, const uint8_t *user, size_t userlen)
 
 	/* Append user-id, escaping non-UTF-8 characters */
 	slen = userlen - i;
+#ifndef WINDOWS
 	if (asmprintf(&cp, INT_MAX, NULL, "%.*s", (int)slen, user) == -1)
 		fatal_f("asmprintf failed");
 	/* Don't emit a user-id that contains path or control characters */
@@ -3096,6 +3097,9 @@ sk_suffix(const char *application, const uint8_t *user, size_t userlen)
 		free(cp);
 		cp = tohex(user, slen);
 	}
+#else
+	cp = tohex(user, slen);
+#endif
 	xextendf(&ret, "_", "%s", cp);
 	free(cp);
 	return ret;

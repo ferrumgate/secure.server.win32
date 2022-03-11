@@ -123,6 +123,9 @@ void	 addargs(arglist *, char *, ...)
 void	 replacearg(arglist *, u_int, char *, ...)
 	    __attribute__((format(printf, 3, 4)));
 void	 freeargs(arglist *);
+#ifdef WINDOWS
+void	 duplicateargs(arglist *, arglist *);
+#endif
 
 int	 tun_open(int, int, char **);
 

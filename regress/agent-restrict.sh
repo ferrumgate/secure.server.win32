@@ -3,6 +3,12 @@
 
 tid="agent restrictions"
 
+if [ "$os" == "windows" ]; then
+	# Not yet implemented
+	echo "skipped, not applicable on windows OS"
+	exit 0
+fi
+
 SSH_AUTH_SOCK="$OBJ/agent.sock"
 export SSH_AUTH_SOCK
 rm -f $SSH_AUTH_SOCK $OBJ/agent.log $OBJ/host_[abcdex]* $OBJ/user_[abcdex]*

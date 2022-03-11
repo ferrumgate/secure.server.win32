@@ -1192,9 +1192,12 @@ do_setup_env(struct ssh *ssh, Session *s, const char *shell)
 
 	if (debug_flag) {
 		/* dump the environment */
-		fprintf(stderr, "Environment:\n");
-		for (i = 0; env[i]; i++)
+		debug3("Environment:\n");
+		fprintf(stderr, "Environment:");
+		for (i = 0; env[i]; i++) {
 			fprintf(stderr, "  %.200s\n", env[i]);
+			debug3("  %.200s", env[i]);
+		}
 	}
 	return env;
 }

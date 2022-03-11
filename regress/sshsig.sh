@@ -85,7 +85,7 @@ for t in $SIGNKEYS; do
 		< $DATA | cut -d' ' -f1-2 > ${OBJ}/${keybase}-fromsig.pub || \
 		fail "failed signature for $t key w/ print-pubkey"
 	cut -d' ' -f1-2 ${OBJ}/${keybase}.pub > ${OBJ}/${keybase}-strip.pub
-	diff -r ${OBJ}/${keybase}-strip.pub ${OBJ}/${keybase}-fromsig.pub || \
+	diff --strip-trailing-cr -r ${OBJ}/${keybase}-strip.pub ${OBJ}/${keybase}-fromsig.pub || \
 		fail "print-pubkey differs from signature key"
 
 	# Invalid option

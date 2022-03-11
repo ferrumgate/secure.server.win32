@@ -2321,7 +2321,11 @@ process_server_config_line_depth(ServerOptions *options, char *line,
 		charptr = &options->authorized_keys_command;
  parse_command:
 		len = strspn(str, WHITESPACE);
+#ifdef WINDOWS
+		if (!path_absolute(str + len) && strcasecmp(str + len, "none") != 0) {
+#else
 		if (str[len] != '/' && strcasecmp(str + len, "none") != 0) {
+#endif
 			fatal("%.200s line %d: %s must be an absolute path",
 			    filename, linenum, keyword);
 		}

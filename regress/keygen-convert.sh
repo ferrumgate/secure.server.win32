@@ -28,7 +28,7 @@ for t in ${SSH_KEYTYPES}; do
 		${SSHKEYGEN} -q -e -f $OBJ/$t-key.pub >$OBJ/$t-key-rfc.pub || \
 		    fail "$t public to rfc4716 public"
 
-		cmp $OBJ/$t-key-rfc $OBJ/$t-key-rfc.pub || \
+		diff --strip-trailing-cr $OBJ/$t-key-rfc $OBJ/$t-key-rfc.pub || \
 		    fail "$t rfc4716 exports differ between public and private"
 
 		trace "import $t rfc4716 public"
@@ -36,7 +36,7 @@ for t in ${SSH_KEYTYPES}; do
 		    fail "$t import rfc4716 public"
 
 		cut -f1,2 -d " " $OBJ/$t-key.pub >$OBJ/$t-key-nocomment.pub
-		cmp $OBJ/$t-key-nocomment.pub $OBJ/$t-rfc-imported || \
+		diff --strip-trailing-cr $OBJ/$t-key-nocomment.pub $OBJ/$t-rfc-imported || \
 		    fail "$t imported differs from original"
 	fi
 
@@ -45,9 +45,16 @@ for t in ${SSH_KEYTYPES}; do
 	    fail "$t set passphrase failed"
 
 	trace "export $t to public with passphrase"
-	SSH_ASKPASS=$OBJ/askpass SSH_ASKPASS_REQUIRE=force \
-	    ${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-nocomment.pub
-	cmp $OBJ/$t-key.pub $OBJ/$t-key-nocomment.pub || \
+	
+	if [ "$os" == "windows" ]; then
+		SSH_ASKPASS=$TEST_SSH_ASKPASS SSH_ASKPASS_REQUIRE=force ASKPASS_PASSWORD="hunter2" \
+			${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-nocomment.pub	
+	else
+		SSH_ASKPASS=$OBJ/askpass SSH_ASKPASS_REQUIRE=force \
+			${SSHKEYGEN} -y -f $OBJ/$t-key >$OBJ/$t-key-nocomment.pub
+	fi
+
+	diff --strip-trailing-cr $OBJ/$t-key.pub $OBJ/$t-key-nocomment.pub || \
 	    fail "$t exported pubkey differs from generated"
 
 	rm -f $OBJ/$t-key $OBJ/$t-key.pub $OBJ/$t-key-rfc $OBJ/$t-key-rfc.pub \

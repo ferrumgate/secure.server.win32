@@ -354,18 +354,25 @@ do_cmd(char *program, char *host, char *remuser, int port, int subsystem,
 
 	/* Fork a child to execute the command on the remote host using ssh. */
 #ifdef FORK_NOT_SUPPORTED
-	replacearg(&args, 0, "%s", ssh_program);		
+	// We shouldn't change the "args"
+	arglist args_dup;
+	memset(&args_dup, '\0', sizeof(remote_remote_args));
+	duplicateargs(&args_dup, &args);
+
+	replacearg(&args_dup, 0, "%s", program);		
 	if (port != -1) {
-		addargs(&args, "-p");
-		addargs(&args, "%d", port);
+		addargs(&args_dup, "-p");
+		addargs(&args_dup, "%d", port);
 	}
 	if (remuser != NULL) {
-		addargs(&args, "-l");
-		addargs(&args, "%s", remuser);
+		addargs(&args_dup, "-l");
+		addargs(&args_dup, "%s", remuser);
 	}
-	addargs(&args, "--");
-	addargs(&args, "%s", host);
-	addargs(&args, "%s", cmd);
+	if (subsystem)
+		addargs(&args_dup, "-s");
+	addargs(&args_dup, "--");
+	addargs(&args_dup, "%s", host);
+	addargs(&args_dup, "%s", cmd);
 
 	{
 		posix_spawn_file_actions_t actions;
@@ -375,12 +382,13 @@ do_cmd(char *program, char *host, char *remuser, int port, int subsystem,
 		    posix_spawn_file_actions_adddup2(&actions, pin[0], STDIN_FILENO) != 0 ||
 		    posix_spawn_file_actions_adddup2(&actions, pout[1], STDOUT_FILENO) != 0 )
 			fatal("posix_spawn initialization failed");
-		else if (posix_spawn(&do_cmd_pid, args.list[0], &actions, NULL, args.list, NULL) != 0) 
+		else if (posix_spawn(&do_cmd_pid, args_dup.list[0], &actions, NULL, args_dup.list, NULL) != 0) 
 			fatal("posix_spawn: %s", strerror(errno));
 			
 			posix_spawn_file_actions_destroy(&actions);
 	}
 
+	freeargs(&args_dup);
 #else
 	*pid = fork();
 	if (*pid == 0) {
@@ -448,19 +456,26 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 
 	/* Fork a child to execute the command on the remote host using ssh. */
 #ifdef FORK_NOT_SUPPORTED
-	/* generate command line and spawn_child */	
-	replacearg(&args, 0, "%s", ssh_program);	
+	/* generate command line and spawn_child */
+	
+	// We shouldn't change the "args"
+	arglist args_dup;
+	memset(&args_dup, '\0', sizeof(remote_remote_args));
+	duplicateargs(&args_dup, &args);
+
+	replacearg(&args_dup, 0, "%s", ssh_program);	
 	if (port != -1) {
-		addargs(&args, "-p");
-		addargs(&args, "%d", port);
+		addargs(&args_dup, "-p");
+		addargs(&args_dup, "%d", port);
 	}
 	if (remuser != NULL) {
-		addargs(&args, "-l");
-		addargs(&args, "%s", remuser);
+		addargs(&args_dup, "-l");
+		addargs(&args_dup, "%s", remuser);
 	}
-	addargs(&args, "--");
-	addargs(&args, "%s", host);
-	addargs(&args, "%s", cmd);
+	addargs(&args_dup, "-oBatchMode=yes");
+	addargs(&args_dup, "--");
+	addargs(&args_dup, "%s", host);
+	addargs(&args_dup, "%s", cmd);
 
 	{
 		posix_spawn_file_actions_t actions;
@@ -470,11 +485,13 @@ do_cmd2(char *host, char *remuser, int port, char *cmd,
 		    posix_spawn_file_actions_adddup2(&actions, fdin, STDIN_FILENO) != 0 ||
 		    posix_spawn_file_actions_adddup2(&actions, fdout, STDOUT_FILENO) != 0 ) 
 			fatal("posix_spawn initialization failed");
-		else if (posix_spawn(&pid, args.list[0], &actions, NULL, args.list, NULL) != 0) 
+		else if (posix_spawn(&pid, args_dup.list[0], &actions, NULL, args_dup.list, NULL) != 0) 
 			fatal("posix_spawn: %s", strerror(errno));
 
 		posix_spawn_file_actions_destroy(&actions);
-	}		
+	}
+
+	freeargs(&args_dup);
 #else 
 	pid = fork();
 	if (pid == 0) {

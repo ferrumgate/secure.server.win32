@@ -1140,6 +1140,21 @@ freeargs(arglist *args)
 	}
 }
 
+#ifdef WINDOWS
+void
+duplicateargs(arglist *dest, arglist *source)
+{
+	if (!source || !dest)
+		return;
+	
+	if (source->list != NULL) {
+		for (int i = 0; i < source->num; i++) {
+			addargs(dest, source->list[i]);
+		}
+	}
+}
+#endif
+
 /*
  * Expands tildes in the file name.  Returns data allocated by xmalloc.
  * Warning: this calls getpw*.

@@ -42,6 +42,10 @@ _EOF
 chmod a+x $OBJ/knownhosts_command
 ${SSH} -F $OBJ/ssh_proxy x true && fail "ssh connect succeeded with bad exit"
 
+# replace "redmond/<username>" to "redmond\<username>"
+expected_username="${LOGNAME////\\}"
+echo "expected_username: $expected_username"
+
 for keytype in ${SSH_HOSTKEY_TYPES} ; do
 	algs=$keytype
 	test "x$keytype" = "xssh-dss" && continue
@@ -51,7 +55,7 @@ for keytype in ${SSH_HOSTKEY_TYPES} ; do
 #!/bin/sh
 die() { echo "\$@" 1>&2 ; exit 1; }
 test "x\$1" = "x$keytype" || die "wrong keytype \$1 (expected $keytype)"
-test "x\$3" = "x$LOGNAME" || die "wrong username \$3 (expected $LOGNAME)"
+test "x\$3" = "x$expected_username" || die "wrong username \$3 (expected $expected_username)"
 grep -- "\$1.*\$2" $OBJ/known_hosts
 _EOF
 	${SSH} -F $OBJ/ssh_proxy -oHostKeyAlgorithms=$algs x true ||
