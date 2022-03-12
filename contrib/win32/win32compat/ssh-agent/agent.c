@@ -214,8 +214,6 @@ agent_cleanup_connection(struct agent_connection* con)
 		sshagent_con_username = NULL;
 	}
 
-
-
 #ifdef ENABLE_PKCS11
 	if (sshagent_client_primary_token)
 		CloseHandle(sshagent_client_primary_token);

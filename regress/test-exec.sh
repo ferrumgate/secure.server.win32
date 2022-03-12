@@ -527,7 +527,6 @@ cat << EOF > $OBJ/sshd_config
 	PidFile			$PIDFILE
 	AuthorizedKeysFile	$OBJ/authorized_keys_%u
 	LogLevel		DEBUG3
-	SyslogFacility LOCAL0
 	AcceptEnv		_XXX_TEST_*
 	AcceptEnv		_XXX_TEST
 	Subsystem	sftp	$SFTPSERVER

@@ -206,8 +206,6 @@ WARNING: Following changes will be made to OpenSSH configuration
         }
         catch
         {
-            write-host "user:$user"
-            write-host "passwd:$($Script:OpenSSHTestAccountsPassword)"
             #only add the local user when it does not exists on the machine        
             net user $user $Script:OpenSSHTestAccountsPassword /ADD 2>&1 >> $Script:TestSetupLogFile
         }
@@ -591,7 +589,7 @@ function Get-UnitTestDirectory
     param
     (
         [ValidateSet('Debug', 'Release')]
-        [string]$Configuration = "Debug",
+        [string]$Configuration = "Release",
 
         [ValidateSet('x86', 'x64', '')]
         [string]$NativeHostArch = ""

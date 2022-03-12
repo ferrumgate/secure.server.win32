@@ -15,12 +15,9 @@ while [ ! -f $OBJ/remote_pid ] && [ $n -gt 0 ]; do
 	sleep 1
 done
 
-echo "killing ssh_pid:$ssh_pid"
 kill $ssh_pid
-echo "waiting for ssh_pid:$ssh_pid"
 wait $ssh_pid
 exit_code=$?
-echo "exit_code:$exit_code"
 
 if [ $exit_code -eq 0 ]; then
 	fail "ssh client should fail on signal"

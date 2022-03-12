@@ -2263,7 +2263,6 @@ interactive_loop(struct sftp_conn *conn, char *file1, char *file2)
 			break;
 		}
 #endif
-		
 		interrupted = 0;
 		if (el == NULL) {
 			if (interactive)
