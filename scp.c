@@ -1128,6 +1128,10 @@ do_sftp_connect(char *host, char *user, int port, char *sftp_direct,
 			return NULL;
 
 	} else {
+		if (args.list) {
+			freeargs(&args);
+		}
+
 		args.list = NULL;
 		addargs(&args, "sftp-server");
 		if (do_cmd(sftp_direct, host, NULL, -1, 0, "sftp",
