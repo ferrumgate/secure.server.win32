@@ -376,13 +376,13 @@ do_cmd(char *program, char *host, char *remuser, int port, int subsystem,
 
 	{
 		posix_spawn_file_actions_t actions;
-		do_cmd_pid = -1;
+		*pid = -1;
 
 		if (posix_spawn_file_actions_init(&actions) != 0 ||
 		    posix_spawn_file_actions_adddup2(&actions, pin[0], STDIN_FILENO) != 0 ||
 		    posix_spawn_file_actions_adddup2(&actions, pout[1], STDOUT_FILENO) != 0 )
 			fatal("posix_spawn initialization failed");
-		else if (posix_spawn(&do_cmd_pid, args_dup.list[0], &actions, NULL, args_dup.list, NULL) != 0) 
+		else if (posix_spawn(pid, args_dup.list[0], &actions, NULL, args_dup.list, NULL) != 0)
 			fatal("posix_spawn: %s", strerror(errno));
 			
 			posix_spawn_file_actions_destroy(&actions);

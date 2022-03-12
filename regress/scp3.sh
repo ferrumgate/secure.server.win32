@@ -21,30 +21,40 @@ scpclean() {
 }
 
 for mode in scp sftp ; do
-	scpopts="-F${OBJ}/ssh_proxy -S ${SSH} -q"
 	tag="$tid: $mode mode"
-	if test $mode = scp ; then
-		scpopts="$scpopts -O"
+
+	# scpopts should be an array to preverse the double quotes
+	if [ "$os" == "windows" ]; then
+		if test $mode = scp ; then
+			scpopts=(-F${OBJ}/ssh_proxy -S "$TEST_SHELL_PATH ${SSH}" -q -O)
+		else
+			scpopts=(-s -D ${SFTPSERVER})
+		fi
 	else
-		scpopts="-s -D ${SFTPSERVER}"
+		scpopts="-F${OBJ}/ssh_proxy -S ${SSH} -q"
+		if test $mode = scp ; then
+			scpopts="$scpopts -O"
+		else
+			scpopts="-s -D ${SFTPSERVER}"
+		fi
 	fi
 
 	verbose "$tag: simple copy remote file to remote file"
 	scpclean
-	$SCP $scpopts -3 hostA:${DATA} hostB:${COPY} || fail "copy failed"
+	$SCP "${scpopts[@]}" -3 hostA:${DATA} hostB:${COPY} || fail "copy failed"
 	cmp ${DATA} ${COPY} || fail "corrupted copy"
 
 	verbose "$tag: simple copy remote file to remote dir"
 	scpclean
 	cp ${DATA} ${COPY}
-	$SCP $scpopts -3 hostA:${COPY} hostB:${DIR} || fail "copy failed"
+	$SCP "${scpopts[@]}" -3 hostA:${COPY} hostB:${DIR} || fail "copy failed"
 	cmp ${COPY} ${DIR}/copy || fail "corrupted copy"
 
 	verbose "$tag: recursive remote dir to remote dir"
 	scpclean
 	rm -rf ${DIR2}
 	cp ${DATA} ${DIR}/copy
-	$SCP $scpopts -3r hostA:${DIR} hostB:${DIR2} || fail "copy failed"
+	$SCP "${scpopts[@]}" -3r hostA:${DIR} hostB:${DIR2} || fail "copy failed"
 	diff -r ${DIR} ${DIR2} || fail "corrupted copy"
 	diff -r ${DIR2} ${DIR} || fail "corrupted copy"
 
@@ -52,7 +62,7 @@ for mode in scp sftp ; do
 	scpclean
 	echo a > ${COPY}
 	echo b > ${COPY2}
-	$SCP $scpopts -3 hostA:${DATA} hostA:${COPY} hostB:${COPY2}
+	$SCP "${scpopts[@]}" -3 hostA:${DATA} hostA:${COPY} hostB:${COPY2}
 	cmp ${COPY} ${COPY2} >/dev/null && fail "corrupt target"
 done
 
