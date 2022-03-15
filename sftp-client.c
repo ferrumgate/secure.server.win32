@@ -64,6 +64,7 @@
 #include "sftp.h"
 #include "sftp-common.h"
 #include "sftp-client.h"
+
 extern volatile sig_atomic_t interrupted;
 extern int showprogress;
 

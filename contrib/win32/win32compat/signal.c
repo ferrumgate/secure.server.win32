@@ -337,7 +337,6 @@ sigaction(int signum, const struct sigaction * act, struct sigaction * oldact)
 	}
 	
 	if (signum >= W32_SIGMAX) {
-		error_f("Invalid signum:%d", signum);
 		errno = EINVAL;
 		return r;
 	}
