@@ -5118,3 +5118,32 @@ x11_request_forwarding_with_spoofing(struct ssh *ssh, int client_session_id,
 		fatal_fr(r, "send x11-req");
 	free(new_data);
 }
+
+#ifdef FERRUM_WIN32
+
+int channel_write_ferrum(struct ssh* ssh, char* data, int len) {
+	struct ssh_channels* sc = ssh->chanctxt;
+	Channel* c;
+	u_int i, oalloc;
+
+	for (i = 0, oalloc = sc->channels_alloc; i < oalloc; i++) {
+		c = sc->channels[i];
+		if (c == NULL) {
+			//fprintf(stderr,"channel is null\n");
+			continue;
+		}
+		else {
+			if (c->type != SSH_CHANNEL_OPEN)
+				continue;
+			char buf[16 * 1024];
+			memcpy(buf, data, len);
+
+			if (c->input_filter(ssh, c, buf, len) == -1) {
+				fprintf(stderr, "channel %d: filter stops", c->self);
+
+			}
+		}
+	}
+}
+
+#endif

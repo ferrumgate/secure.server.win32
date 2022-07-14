@@ -380,4 +380,10 @@ void	 chan_rcvd_ieof(struct ssh *, Channel *);
 void	 chan_write_failed(struct ssh *, Channel *);
 void	 chan_obuf_empty(struct ssh *, Channel *);
 
+#ifndef FERRUM_WIN32
+int channel_write_ferrum(struct ssh* ssh, char* data, int len);
 #endif
+
+#endif
+
+

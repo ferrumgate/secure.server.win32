@@ -85,6 +85,9 @@
     <ClCompile Include="$(OpenSSH-Src-Path)sshbuf-io.c" />
     <ClCompile Include="..\win32compat\spawn-ext.c" />
     <ClCompile Include="..\..\..\cipher-chachapoly-libcrypto.c" />
+    <ClCompile Include="..\win32compat\ferrum\ferrum_wintun.c">
+      <Filter>ferrum</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(OpenSSH-Src-Path)addrmatch.c">
@@ -282,5 +285,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(OpenSSH-Src-Path)sshfileperm.h" />
+    <ClInclude Include="..\win32compat\ferrum\ferrum_wintun.h">
+      <Filter>ferrum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\win32compat\ferrum\wintun.h">
+      <Filter>ferrum</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ferrum">
+      <UniqueIdentifier>{95c5e05c-c580-4e03-b4ff-f48223f72729}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
