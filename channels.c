@@ -1996,6 +1996,10 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 
 	return 1;
 }
+#ifdef FERRUM_WIN32
+extern int FerrumWriteWinTun(char* buffer, size_t buf_len);
+#endif
+
 
 static int
 channel_handle_wfd(struct ssh *ssh, Channel *c)
@@ -2032,7 +2036,14 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 
 	if (c->datagram) {
 		/* ignore truncated writes, datagrams might get lost */
+#ifdef FERRUM_WIN32
+
+		len=FerrumWriteWinTun(buf, dlen);
+		len = dlen;
+#else
+
 		len = write(c->wfd, buf, dlen);
+#endif
 		free(data);
 		if (len == -1 && (errno == EINTR || errno == EAGAIN ||
 		    errno == EWOULDBLOCK))

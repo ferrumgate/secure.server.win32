@@ -1727,7 +1727,7 @@ client_request_tun_fwd(struct ssh *ssh, int tun_mode,
 
 	ifname = strdup("tun0");
 
-	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, ferrum_client->pipes.read[0], ferrum_client->pipes.write[1], -1,
+	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, -1, ferrum_client->pipes.write[1], -1,
 		CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
 
 	#endif
