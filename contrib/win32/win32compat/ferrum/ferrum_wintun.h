@@ -19,6 +19,7 @@ extern "C" {
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "fcntl.h"
 #include "wintun.h"
 
 
@@ -38,6 +39,9 @@ extern "C" {
 	int FerrumWinTunReadFree(char* buffer);
 	// write to tun device
 	int FerrumWriteWinTun(char* buffer, size_t buf_len);
+	// a custom poll for supporting wintun HANDLE
+	
+	int FerrumPoll( int conin, int conout, void* tunhandle, int cwfd, int results[4],int timeoutms);
 
 
 
@@ -54,12 +58,11 @@ extern "C" {
 		WINTUN_ADAPTER_HANDLE adapter;
 		// wintun session
 		WINTUN_SESSION_HANDLE session;
-		//HANDLE quitEvent;
-		HANDLE timer1_event;
+
 		HANDLE session_event;
 		struct {
-			int read[2];
-			int write[2];
+			int read[4];
+			int write[4];
 		}pipes;
 
 		struct {

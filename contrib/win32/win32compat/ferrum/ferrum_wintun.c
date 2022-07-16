@@ -280,46 +280,58 @@ FerrumStopWinTun() {
 
 }
 
-VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired)
-{
-
-
-    SetEvent(ferrum_client->timer1_event);
-
+// for perfornmance testing used
+static int SocketListen(int pair[4]) {
+    struct sockaddr_in addr;
+    int len = sizeof(addr);
+    int result= w32_accept(pair[3],(struct sockaddr*) & addr, &len);
+    if (result == SOCKET_ERROR) {
+        fprintf(stderr, "socket server  accept bind failed\n");
+        return -1;
+    }
+    pair[1] = result;
+    fprintf(stderr, "client connected\n");
+    return 0;
 }
-
-void FollowTun(void* param) {
-    HANDLE tun = WintunGetReadWaitEvent(ferrum_client->session);
-    HANDLE timer;
-    HANDLE hTimerQueue = NULL;
-    hTimerQueue = CreateTimerQueue();
-    if (NULL == hTimerQueue)
-    {
-        fprintf(stderr, "CreateTimerQueue failed (%d)\n", GetLastError());
-        return;
-    }
-    CreateTimerQueueTimer(&timer, hTimerQueue, TimerRoutine, NULL, 1000, 1, 0);
-    ferrum_client->timer1_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    HANDLE events[] = { tun,ferrum_client->timer1_event };
-
-    //struct pollfd fds[1];
-    int counter = 0;
-    char tmp[128];
-    while (ferrum_client->work)
-    {
-       // fprintf(stderr, "signaling tun\n");
-        ResetEvent(ferrum_client->timer1_event);
-        WaitForMultipleObjects(_countof(events), events, FALSE, INFINITE);
-        int written = w32_write(ferrum_client->sync.socket[1], &counter, 1);
-        
-        if (written < 0)
-        {
-            fprintf(stderr, "sync write problem\n");
-            return;
-
-        }
-
-    }
+//for performance testing used
+static int CreateSocketPair(int pair[4]) {
+     int listener=w32_socket(AF_INET, SOCK_STREAM, 0);
+     if (listener == INVALID_SOCKET) {
+         fprintf(stderr, "socket server create failed\n");
+         return -1;
+     }
+     struct sockaddr_in addr;
+     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+     addr.sin_family = AF_INET;
+     addr.sin_port = 0;
+     int result=w32_bind(listener, (struct sockaddr *) & addr, sizeof(addr));
+     if (result == SOCKET_ERROR) {
+         fprintf(stderr, "socket server  bind failed\n");
+         return -1;
+     }
+     int len = sizeof(addr);
+     w32_getsockname(listener, (struct sockaddr*)&addr, &len);
+     fprintf(stderr, "socket server listening on %d\n",ntohs(addr.sin_port));
+     result=w32_listen(listener, 10);
+     if (result == SOCKET_ERROR) {
+         fprintf(stderr, "socket server listen failed\n");
+         return -1;
+     }
+     pair[3] = listener;
+     CreateThread(NULL, 0, SocketListen, pair, 0, NULL);
+     Sleep(1000);
+     int client = w32_socket(AF_INET, SOCK_STREAM, 0);
+     if (client == INVALID_SOCKET) {
+         fprintf(stderr, "socket client create failed\n");
+         return -1;
+     }
+     result=w32_connect(client, (struct sockaddr*)&addr, len);
+     if (result == SOCKET_ERROR) {
+         fprintf(stderr, "socket client connect failed\n");
+         return -1;
+     }
+     pair[0] = client;
+     return 0;
 }
 
 
@@ -338,6 +350,7 @@ int FerrumRxTxWinTun(void) {
     int result;
     //result=pipe(ferrum_client->pipes.write);
     result = socketpair(AF_UNIX, SOCK_STREAM, 0, ferrum_client->pipes.write);
+   //result= CreateSocketPair(ferrum_client->pipes.write);
     if (result == -1) {
         fprintf(stderr, "create write pipes failed %s\n", strerror(errno));
         return 1;
@@ -347,6 +360,7 @@ int FerrumRxTxWinTun(void) {
     set_nonblock(ferrum_client->pipes.write[1]);
     //result=pipe(ferrum_client->pipes.read);
     result = socketpair(AF_UNIX, SOCK_STREAM, 0, ferrum_client->pipes.read);
+    //result=CreateSocketPair(ferrum_client->pipes.read);
     if (result == -1) {
         fprintf(stderr, "create read pipes failed %s\n", strerror(errno));
         return 1;
@@ -363,7 +377,7 @@ int FerrumRxTxWinTun(void) {
     set_nonblock(ferrum_client->sync.socket[0]);
     set_nonblock(ferrum_client->sync.socket[1]);
     
-    CreateThread(NULL,0,FollowTun,NULL,0,NULL);
+    //CreateThread(NULL,0,FollowTun,NULL,0,NULL);
     return ERROR_SUCCESS;
 
 }
@@ -392,6 +406,142 @@ int FerrumWriteWinTun(char* buffer, size_t buf_len) {
         return 0;
     }
     return GetLastError();
+}
+
+
+// which events fired connection in, connection out, tun, channel write fd
+static WSAEVENT events[4]={0,0,0,0};
+
+// create a socket event
+static int createSockEvent(int sock,int defaultIndex, int index, WSAEVENT* eventArray,SOCKET *socketArray, int ev) {
+    WSAEVENT evsockin;
+    if (events[defaultIndex])
+        evsockin = events[defaultIndex];
+    else {
+        evsockin = WSACreateEvent();
+        if (evsockin == WSA_INVALID_EVENT) {
+            fprintf(stderr, "event create error \n");
+            return -1;
+        }
+    }
+    events[defaultIndex] = evsockin;
+    
+    SOCKET wsockin = (SOCKET)w32_fd_to_handle(sock);
+    if (wsockin == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "socket conversion error\n");
+        return -1;
+    }
+    socketArray[index] = wsockin;
+    eventArray[index] = evsockin;
+    int result = WSAEventSelect(wsockin, eventArray[index], ev);
+    if (result == SOCKET_ERROR) {
+        fprintf(stderr, "event select error\n");
+        return -1;
+    }
+    return 0;
+}
+
+
+int FerrumPoll(int conin, int conout, void* tunhandle, int cwfd, int results[4], int timeoutms) {
+
+    DWORD eventId;
+    HANDLE tun = tunhandle;
+    DWORD eventTotal = 0;
+    DWORD result;
+    WSANETWORKEVENTS networkEvents;
+    WSAEVENT eventArray[WSA_MAXIMUM_WAIT_EVENTS];
+    SOCKET socketArray[WSA_MAXIMUM_WAIT_EVENTS];
+    int indexToDefault[WSA_MAXIMUM_WAIT_EVENTS];
+   
+    if (conout>-1){
+        // on windows this not working as posix, because of this we will allways return POLL_OUT
+        timeoutms = 0;
+    }
+  
+    if (conin > -1) {
+       
+        result = createSockEvent(conin,0, eventTotal, eventArray,socketArray, FD_READ);
+        if (result)return result;
+        indexToDefault[eventTotal] = 0; // save which event is this, 0 event is connection in
+        eventTotal++;
+    }
+
+   
+    if ((int)tunhandle > -1) {
+        eventArray[eventTotal] = tun;
+        indexToDefault[eventTotal] = 1; //save which event is this, 1 event is tun event
+        eventTotal++;
+    }
+
+
+    
+    if (cwfd > -1) {
+        // on windows this not working as posix, because of this we will allways return POLL_OUT
+        timeoutms = 0;
+    }
+
+        
+    eventId = WSA_WAIT_IO_COMPLETION;
+    while (eventId == WSA_WAIT_IO_COMPLETION) {
+        if ((eventId = WSAWaitForMultipleEvents(eventTotal, eventArray, FALSE, timeoutms, FALSE)) == WSA_WAIT_FAILED)
+        {
+            fprintf(stderr, "WSAWaitForMultipleEvents() failed with error %d\n", WSAGetLastError());
+            return -1;
+        }
+
+        if (eventId == WSA_WAIT_IO_COMPLETION) {
+                continue;
+        }
+        if (eventId == WSA_WAIT_TIMEOUT) {
+
+            if (timeoutms != 0)
+                return 0;
+        }
+    }
+        
+    
+    if (eventId != WSA_WAIT_TIMEOUT && eventId!=WSA_WAIT_IO_COMPLETION) {
+        eventId = eventId - WSA_WAIT_EVENT_0;
+
+       // fprintf(stderr, "eventId fired :%d ", eventId);
+        int defaultId = indexToDefault[eventId];
+        if (defaultId == 0) {
+            WSANETWORKEVENTS nevent;
+            WSAEnumNetworkEvents(socketArray[eventId], eventArray[eventId], &nevent);
+
+            if (nevent.lNetworkEvents & FD_READ) {
+                results[0] = 1;//connection in is fired
+                //fprintf(stderr, "read\n");
+            }
+            if (nevent.lNetworkEvents & FD_WRITE) {
+                results[1] = 1;//save connection out is fired
+               // fprintf(stderr, "write\n");
+            }
+        }
+        if (defaultId == 1) {
+            //fprintf(stderr, "tun\n");
+            //ResetEvent(eventArray[eventId]);
+            results[2] = 1; // tun is fired
+
+        }
+        if (defaultId == 2) {
+            WSANETWORKEVENTS nevent;
+            WSAEnumNetworkEvents(socketArray[eventId], eventArray[eventId], &nevent);
+
+            if (nevent.lNetworkEvents & FD_WRITE) {
+                results[3] = 1; // channel write fd is ready
+
+            }
+        }
+    }
+    // for posix compat, set allways fired if asked
+    if (conout > -1)
+        results[1] = 1;
+    if (cwfd > -1)
+        results[3] = 1;
+
+
+    return 1;
 }
 
 

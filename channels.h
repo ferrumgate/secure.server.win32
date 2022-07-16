@@ -380,7 +380,11 @@ void	 chan_rcvd_ieof(struct ssh *, Channel *);
 void	 chan_write_failed(struct ssh *, Channel *);
 void	 chan_obuf_empty(struct ssh *, Channel *);
 
-#ifndef FERRUM_WIN32
+
+#ifdef FERRUM_WIN32
+extern int FerrumReadWinTun(char** buffer, size_t* readed);
+extern int FerrumWinTunReadFree(char* buffer);
+extern int FerrumWriteWinTun(char* buffer, size_t buf_len);
 int channel_write_ferrum(struct ssh* ssh, char* data, int len);
 #endif
 

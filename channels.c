@@ -1915,6 +1915,8 @@ channel_post_connecting(struct ssh *ssh, Channel *c)
 	}
 }
 
+
+
 static int
 channel_handle_rfd(struct ssh *ssh, Channel *c)
 {
@@ -1962,7 +1964,24 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 	}
 
 	errno = 0;
+#ifndef FERRUM_WIN32
 	len = read(c->rfd, buf, sizeof(buf));
+#else
+	char* buffer;
+	size_t buflen;
+
+	int result = FerrumReadWinTun(&buffer, &buflen);
+	if (!result) {
+
+		memcpy(buf, buffer, buflen);
+		FerrumWinTunReadFree(buffer);
+		len = buflen;
+	}
+	else {
+		len = -1;//error
+		return 1;
+	}
+#endif
 	/* fixup AIX zero-length read with errno set to look more like errors */
 	if (pty_zeroread && len == 0 && errno != 0)
 		len = -1;
@@ -1996,9 +2015,7 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 
 	return 1;
 }
-#ifdef FERRUM_WIN32
-extern int FerrumWriteWinTun(char* buffer, size_t buf_len);
-#endif
+
 
 
 static int
@@ -2037,11 +2054,9 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 	if (c->datagram) {
 		/* ignore truncated writes, datagrams might get lost */
 #ifdef FERRUM_WIN32
-
 		len=FerrumWriteWinTun(buf, dlen);
 		len = dlen;
 #else
-
 		len = write(c->wfd, buf, dlen);
 #endif
 		free(data);
@@ -2058,7 +2073,6 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 	if (c->wfd_isatty)
 		dlen = MINIMUM(dlen, 8*1024);
 #endif
-
 	len = write(c->wfd, buf, dlen);
 	if (len == -1 &&
 	    (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
@@ -2097,6 +2111,8 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 
 	return 1;
 }
+
+
 
 static int
 channel_handle_efd_write(struct ssh *ssh, Channel *c)
@@ -2277,7 +2293,6 @@ channel_post_mux_client_write(struct ssh *ssh, Channel *c)
 		return;
 	if (sshbuf_len(c->output) == 0)
 		return;
-
 	len = write(c->wfd, sshbuf_ptr(c->output), sshbuf_len(c->output));
 	if (len == -1 && (errno == EINTR || errno == EAGAIN))
 		return;
