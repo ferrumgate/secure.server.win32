@@ -1,0 +1,1 @@
+.\ssh.exe -N -o "StrictHostKeyChecking no"  -w any ferrum@192.168.43.138 -p3333

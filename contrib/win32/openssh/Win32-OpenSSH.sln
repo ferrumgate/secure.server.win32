@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27027.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssh", "ssh.vcxproj", "{74E69D5E-A1EF-46EA-9173-19A412774104}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -179,6 +179,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssh-pkcs11-helper", "ssh-pk
 		{DD483F7D-C553-4740-BC1A-903805AD0174} = {DD483F7D-C553-4740-BC1A-903805AD0174}
 		{0D02F0F0-013B-4EE3-906D-86517F3822C0} = {0D02F0F0-013B-4EE3-906D-86517F3822C0}
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ferrum", "ferrum", "{AB32892D-83C6-4D31-8417-F6FA1C643379}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\ferrum\ip.bat = ..\..\..\ferrum\ip.bat
+		..\..\..\ferrum\run.bat = ..\..\..\ferrum\run.bat
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "iperf", "iperf", "{B5172EAC-5283-4615-9CAE-4E69C66D21A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -605,6 +613,7 @@ Global
 		{7D0A75FC-F366-4B60-B72F-B37C3EA07CCA} = {17322AAF-808F-4646-AD37-5B0EDDCB8F3E}
 		{7D0A75FC-F366-4B60-B72F-B37C3EA07CCB} = {17322AAF-808F-4646-AD37-5B0EDDCB8F3E}
 		{21D772C3-0EB0-47B7-A93C-FF624675A58D} = {17322AAF-808F-4646-AD37-5B0EDDCB8F3E}
+		{B5172EAC-5283-4615-9CAE-4E69C66D21A6} = {AB32892D-83C6-4D31-8417-F6FA1C643379}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0AC224E8-C215-4270-954A-A2ACEE06DE58}

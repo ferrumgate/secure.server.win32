@@ -115,6 +115,11 @@
 #include "ssherr.h"
 #include "hostfile.h"
 
+#ifdef FERRUM_WIN32
+#include "openbsd-compat/port-net.h"
+#include "ferrum/ferrum_wintun.h"
+#endif
+
 /* Permitted RSA signature algorithms for UpdateHostkeys proofs */
 #define HOSTKEY_PROOF_RSA_ALGS	"rsa-sha2-512,rsa-sha2-256"
 
@@ -528,29 +533,49 @@ client_wait_until_can_do_something(struct ssh *ssh, struct pollfd **pfdp,
 	time_t minwait_secs = 0, now = monotime();
 	int ret;
 	u_int p;
+#ifdef FERRUM_WIN32
+	int tun_readed = 0;
+	char* buffer;
+	size_t buflen;
+
+	int result = FerrumReadWinTun(&buffer, &buflen);
+	if (!result) {
+
+		channel_write_ferrum(ssh, buffer, buflen);
+		channel_output_poll(ssh);
+		FerrumWinTunReadFree(buffer);
+
+	}
+
+#endif
 
 	*conn_in_readyp = *conn_out_readyp = 0;
 
 	/* Prepare channel poll. First two pollfd entries are reserved */
-	channel_prepare_poll(ssh, pfdp, npfd_allocp, npfd_activep, 2,
-	    &minwait_secs);
-	if (*npfd_activep < 2)
-		fatal_f("bad npfd %u", *npfd_activep); /* shouldn't happen */
 
-	/* channel_prepare_poll could have closed the last channel */
+		channel_prepare_poll(ssh, pfdp, npfd_allocp, npfd_activep, 2,
+			&minwait_secs);
+		if (*npfd_activep < 2)
+			fatal_f("bad npfd %u", *npfd_activep); /* shouldn't happen */
+
+
+/* channel_prepare_poll could have closed the last channel */
 	if (session_closed && !channel_still_open(ssh) &&
-	    !ssh_packet_have_data_to_write(ssh)) {
+		!ssh_packet_have_data_to_write(ssh)) {
 		/* clear events since we did not call poll() */
 		for (p = 0; p < *npfd_activep; p++)
 			(*pfdp)[p].revents = 0;
 		return;
 	}
+	
+		
 
 	/* Monitor server connection on reserved pollfd entries */
 	(*pfdp)[0].fd = connection_in;
 	(*pfdp)[0].events = POLLIN;
 	(*pfdp)[1].fd = connection_out;
 	(*pfdp)[1].events = ssh_packet_have_data_to_write(ssh) ? POLLOUT : 0;
+	
 
 	/*
 	 * Wait for something to happen.  This will suspend the process until
@@ -563,7 +588,7 @@ client_wait_until_can_do_something(struct ssh *ssh, struct pollfd **pfdp,
 		timeout_secs = MAXIMUM(server_alive_time - now, 0);
 	if (options.rekey_interval > 0 && !rekeying)
 		timeout_secs = MINIMUM(timeout_secs,
-		    ssh_packet_get_rekey_timeout(ssh));
+			ssh_packet_get_rekey_timeout(ssh));
 	set_control_persist_exit_time(ssh);
 	if (control_persist_exit_time > 0) {
 		timeout_secs = MINIMUM(timeout_secs,
@@ -579,8 +604,29 @@ client_wait_until_can_do_something(struct ssh *ssh, struct pollfd **pfdp,
 		pollwait = INT_MAX;
 	else
 		pollwait = timeout_secs * 1000;
-
+#ifndef FERRUM_WIN32
 	ret = poll(*pfdp, *npfd_activep, pollwait);
+#else
+	int revents[4] = { 0 };
+	
+	int checkIn =  1;
+
+	int checkOut =  (*pfdp)[1].events;
+	int checkRfd = (*npfd_activep > 1) && (*pfdp)[2].events;
+	int checkWfd = (*npfd_activep > 3) && (*pfdp)[3].events;
+	for (p = 0; p < *npfd_activep; p++)
+		(*pfdp)[p].revents = 0;
+	//fprintf(stderr, "check %d %d %d %d %d\n", checkIn, checkOut, checkRfd, checkWfd,pollwait);
+
+	ret=FerrumPoll( 
+	
+		checkIn? connection_in:-1,
+		checkOut ? connection_out : -1,
+		checkRfd ? ferrum_client->session_event : -1,
+		checkWfd ? ferrum_client->pipes.write[1] : -1, 
+		revents, pollwait);
+#endif
+	
 
 	if (ret == -1) {
 		/*
@@ -597,11 +643,37 @@ client_wait_until_can_do_something(struct ssh *ssh, struct pollfd **pfdp,
 		return;
 	}
 
+	#ifdef FERRUM_WIN32
+	if (ret == 0) {
+		for (p = 0; p < *npfd_activep; p++)
+			(*pfdp)[p].revents = 0;
+
+		return;
+	}
+	
+
+	if (revents[0]) {
+		(*pfdp)[0].revents = POLLIN;
+	}
+	if (checkOut || revents[1]) {
+		(*pfdp)[1].revents = POLLOUT;
+	}
+	if (revents[2]) {
+		(*pfdp)[2].revents = POLLIN;
+	}
+	if (revents[3]) {
+		(*pfdp)[3].revents = POLLOUT;
+	}
+
+	#endif
+
+
 	*conn_in_readyp = (*pfdp)[0].revents != 0;
 	*conn_out_readyp = (*pfdp)[1].revents != 0;
 
+	//fprintf(stderr, "poll %d %d %d %d %d\n", (*pfdp)[0].revents, (*pfdp)[1].revents, (*pfdp)[2].revents, (*pfdp)[3].revents, *npfd_activep);
 	if (options.server_alive_interval > 0 && !*conn_in_readyp &&
-	    monotime() >= server_alive_time) {
+		monotime() >= server_alive_time) {
 		/*
 		 * ServerAlive check is needed. We can't rely on the poll
 		 * timing out since traffic on the client side such as port
@@ -647,8 +719,10 @@ client_process_net_input(struct ssh *ssh)
 	 * the packet subsystem.
 	 */
 	schedule_server_alive_check();
-	if ((r = ssh_packet_process_read(ssh, connection_in)) == 0)
+	if ((r = ssh_packet_process_read(ssh, connection_in)) == 0) {
 		return; /* success */
+	}
+
 	if (r == SSH_ERR_SYSTEM_ERROR) {
 		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
 			return;
@@ -1375,12 +1449,12 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		 * Send as much buffered packet data as possible to the
 		 * sender.
 		 */
-		if (conn_out_ready) {
+		if (conn_out_ready)
 			if ((r = ssh_packet_write_poll(ssh)) != 0) {
 				sshpkt_fatal(ssh, r,
 				    "%s: ssh_packet_write_poll", __func__);
 			}
-		}
+		
 
 		/*
 		 * If we are a backgrounded control master, and the
@@ -1635,15 +1709,29 @@ client_request_tun_fwd(struct ssh *ssh, int tun_mode,
 
 	debug("Requesting tun unit %d in mode %d", local_tun, tun_mode);
 
+	#ifndef FERRUM_WIN32
 	/* Open local tunnel device */
 	if ((fd = tun_open(local_tun, tun_mode, &ifname)) == -1) {
 		error("Tunnel device open failed.");
 		return NULL;
 	}
 	debug("Tunnel forwarding using interface %s", ifname);
-
 	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+		CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+	#else
+
+	int result = FerrumRxTxWinTun();
+	if (result) {
+		fprintf(stderr, "starting ferrum wintun failed:%d\n", result);
+		return NULL;
+}
+
+	ifname = strdup("tun0");
+
+	c = channel_new(ssh, "tun", SSH_CHANNEL_OPENING, ferrum_client->pipes.w32_read[0], ferrum_client->pipes.write[1], -1,
+		CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+
+	#endif
 	c->datagram = 1;
 
 #if defined(SSH_TUN_FILTER)

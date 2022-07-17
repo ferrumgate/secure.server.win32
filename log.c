@@ -95,6 +95,13 @@ static struct {
 	{ "LOCAL7",	SYSLOG_FACILITY_LOCAL7 },
 	{ NULL,		SYSLOG_FACILITY_NOT_SET }
 };
+#ifdef FERRUM_WIN32
+extern int FerrumStopWinTun(void);
+static void log_ferrum_exit() {
+	FerrumStopWinTun();
+	fprintf(stderr, "ferrum_exit:\n");
+}
+#endif
 
 static struct {
 	const char *name;
@@ -449,6 +456,9 @@ sshlogdie(const char *file, const char *func, int line, int showfunc,
 	sshlogv(file, func, line, showfunc, SYSLOG_LEVEL_INFO,
 	    suffix, fmt, args);
 	va_end(args);
+#ifdef FERRUM_WIN32
+	log_ferrum_exit();
+#endif
 	cleanup_exit(255);
 }
 
@@ -462,6 +472,9 @@ sshsigdie(const char *file, const char *func, int line, int showfunc,
 	sshlogv(file, func, line, showfunc, SYSLOG_LEVEL_FATAL,
 	    suffix, fmt, args);
 	va_end(args);
+#ifdef FERRUM_WIN32
+	log_ferrum_exit();
+#endif
 	_exit(1);
 }
 
