@@ -60,14 +60,16 @@ extern "C" {
 		WINTUN_SESSION_HANDLE session;
 
 		HANDLE session_event;
+
+		//file descriptors for wintun adaptation
 		struct {
-			int read[4];
-			int write[4];
+			int read[2];
+			int write[2];
 		}pipes;
 
-		struct {
+	/*	struct {
 			int socket[2];
-		}sync;
+		}sync;*/
 
 
 

@@ -627,7 +627,7 @@ ssh_conn_info_free(struct ssh_conn_info *cinfo)
 }
 
 #ifdef FERRUM_WIN32
-void on_ferrum_exit() {
+void on_ferrum_exit(void) {
 	fprintf(stderr, "%s\n", "ferrum_exit:");
 	ferrum_client->work = FALSE;
 	FerrumStopWinTun();
@@ -1773,7 +1773,6 @@ control_persist_detach(void)
 	pid_t pid;
 
 	debug_f("backgrounding master process");
-
 	/*
 	 * master (current process) into the background, and make the
 	 * foreground process a client of the backgrounded master.

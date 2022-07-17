@@ -205,71 +205,71 @@ int __cdecl
 FerrumStartWinTun()
 {
     //clear all states
-    ferrum_client = malloc(sizeof(ferrum_client_t));
-    ZeroMemory(ferrum_client, sizeof(ferrum_client_t));
-    HMODULE Wintun = InitializeWintun();
-    if (!Wintun)
-        return LogError(L"failed to initialize wintun", GetLastError());
-    ferrum_client->loadedLib = 1;
-    //WintunSetLogger(ConsoleLogger);
-    Log(WINTUN_LOG_INFO, L"wintun library loaded");
-
     DWORD LastError = ERROR_SUCCESS;
+    int tryCount = 4;
+    HMODULE Wintun;
+    WINTUN_ADAPTER_HANDLE Adapter;
+    while (tryCount--) {
+        ferrum_client = malloc(sizeof(ferrum_client_t));
+        ZeroMemory(ferrum_client, sizeof(ferrum_client_t));
+        Wintun = InitializeWintun();
+        if (!Wintun)
+            return LogError(L"failed to initialize wintun", GetLastError());
+        ferrum_client->loadedLib = 1;
+        //WintunSetLogger(ConsoleLogger);
+        Log(WINTUN_LOG_INFO, L"wintun library loaded");
+
+        GUID guid = { 0x43dad8f2, 0x3304, 0x4033, { 0x8a, 0x6a, 0xb9, 0x47, 0x0c, 0x10, 0xc5, 0x75 } };
 
 
-    // if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
-    // {
-    //     LastError = LogError("failed to set console handler", GetLastError());
-    //     goto cleanupQuit;
-    // }
+        Adapter = WintunCreateAdapter(L"FerrumGate", L"Secure", &guid);
+        if (!Adapter)
+        {
+            LastError = GetLastError();
+            LogError(L"failed to create adapter", LastError);
+            if (!tryCount)//try finished
+            {
+                fprintf(stderr, "try one more loading wintun\n");
+                FreeLibrary(Wintun);
+                return LastError;
+            }
+            else {
+                FreeLibrary(Wintun);
+                continue;
+            }
 
-    GUID guid = { 0x43dad8f2, 0x3304, 0x4033, { 0x8a, 0x6a, 0xb9, 0x47, 0x0c, 0x10, 0xc5, 0x75 } };
+        }
 
 
-    WINTUN_ADAPTER_HANDLE Adapter = WintunCreateAdapter(L"FerrumGate", L"Secure", &guid);
-    if (!Adapter)
-    {
-        LastError = GetLastError();
-        LogError(L"failed to create adapter", LastError);
-        goto cleanupQuit;
 
+        DWORD Version = WintunGetRunningDriverVersion();
+        Log(WINTUN_LOG_INFO, L"wintun v%u.%u loaded", (Version >> 16) & 0xff, (Version >> 0) & 0xff);
+
+        ferrum_client->wintun = Wintun;
+        ferrum_client->adapter = Adapter;
+        ferrum_client->initted = 1;
+        break;
     }
-
-
-    DWORD Version = WintunGetRunningDriverVersion();
-    Log(WINTUN_LOG_INFO, L"wintun v%u.%u loaded", (Version >> 16) & 0xff, (Version >> 0) & 0xff);
-
-    ferrum_client->wintun = Wintun;
-    ferrum_client->adapter = Adapter;
-    ferrum_client->initted = 1;
     WINTUN_SESSION_HANDLE Session = WintunStartSession(ferrum_client->adapter, 0x400000);
     if (!Session)
     {
         LastError = LogLastError(L"Failed to create tun session");
+        WintunCloseAdapter(Adapter);
+        FreeLibrary(Wintun);
         return LastError;
     }
     ferrum_client->session = Session;
     ferrum_client->session_event = WintunGetReadWaitEvent(Session);
-    return LastError;
-cleanupAdapter:
-    WintunCloseAdapter(Adapter);
-cleanupQuit:
-    SetConsoleCtrlHandler(CtrlHandler, FALSE);
-    // CloseHandle(ferrum_client->quitEvent);
-cleanupWintun:
-    FreeLibrary(Wintun);
-    return LastError;
+    return 0;
 }
 
 int __cdecl
 FerrumStopWinTun() {
     if (ferrum_client->initted) {
-        //SetEvent(ferrum_client->quitEvent);
+        
         if (ferrum_client->session)
             WintunEndSession(ferrum_client->session);
         WintunCloseAdapter(ferrum_client->adapter);
-        //SetConsoleCtrlHandler(CtrlHandler, FALSE);
-        //CloseHandle(ferrum_client->quitEvent);
 
     }
     if (ferrum_client->loadedLib)
@@ -368,14 +368,14 @@ int FerrumRxTxWinTun(void) {
     set_nonblock(ferrum_client->pipes.read[0]);
     set_nonblock(ferrum_client->pipes.read[1]);
 
-    result = socketpair(AF_UNIX, SOCK_STREAM, 0, ferrum_client->sync.socket);
-    //result=pipe(ferrum_client->sync.socket);
-    if (result == -1) {
-        fprintf(stderr, "create sync socket failed %s\n", strerror(errno));
-        return 1;
-    }
-    set_nonblock(ferrum_client->sync.socket[0]);
-    set_nonblock(ferrum_client->sync.socket[1]);
+    //result = socketpair(AF_UNIX, SOCK_STREAM, 0, ferrum_client->sync.socket);
+    ////result=pipe(ferrum_client->sync.socket);
+    //if (result == -1) {
+    //    fprintf(stderr, "create sync socket failed %s\n", strerror(errno));
+    //    return 1;
+    //}
+    //set_nonblock(ferrum_client->sync.socket[0]);
+    //set_nonblock(ferrum_client->sync.socket[1]);
     
     //CreateThread(NULL,0,FollowTun,NULL,0,NULL);
     return ERROR_SUCCESS;
