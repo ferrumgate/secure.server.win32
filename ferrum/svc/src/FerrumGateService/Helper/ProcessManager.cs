@@ -18,74 +18,123 @@ namespace FerrumGateService.Helper
 
         
         static Process ferrum = null;
- 
+        public static Task Task = null;
         
         public delegate void ProcessOutputHandler(string output);
         public static ProcessOutputHandler ProcessOutput = null;
-        private static void StartFerrum(PipeServer pipe,String[] args)
+        private static string StartFerrum(String args)
         {
-            Task.Run(() =>
+            string pipeName = Guid.NewGuid().ToString().Replace("-", "");
+            
+            using (AutoResetEvent waitEvent = new AutoResetEvent(false))//wait pipe for start
             {
-                KillAllProcess(ProcessName);
-
-                try
+                bool waitEventSignaled = false;
+                ProcessManager.Task= Task.Run(() =>
                 {
+                    KillAllProcess(ProcessName);
 
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
+                    try
+                    {
+                        Console.WriteLine("opening sub pipe ferrumgate_" + pipeName);
+                        using (var cts = new CancellationTokenSource())
+                        using (PipeServer pipe = new PipeServer("ferrumgate_" + pipeName, cts.Token, 5000, int.MaxValue, 10))
+                        {
+                            waitEvent.Set();
+                            waitEventSignaled = true;
+                            pipe.WaitForConnection();
+
+                            try // we need this if pipe is successfull
+                            {
+                                ProcessStartInfo startInfo = new ProcessStartInfo();
 #if !DEBUG
-                    startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"External", Environment.Is64BitOperatingSystem?"x64":"x86", ProcessName);
+                                startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "External", Environment.Is64BitOperatingSystem ? "x64" : "x86", ProcessName);
 #else
-                    startInfo.FileName = ProcessName;
+                            startInfo.FileName = ProcessName;
 #endif
 
 
-                    startInfo.CreateNoWindow = true;
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    startInfo.UseShellExecute = false;
-                    startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "External", Environment.Is64BitOperatingSystem ? "x64" : "x86");
-                    startInfo.RedirectStandardOutput = true;
-                    startInfo.RedirectStandardError = true;
-                    startInfo.Arguments = String.Join(" ", args);
+                                startInfo.CreateNoWindow = true;
+                                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                                startInfo.UseShellExecute = false;
+                                startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "External", Environment.Is64BitOperatingSystem ? "x64" : "x86");
+                                startInfo.RedirectStandardOutput = true;
+                                startInfo.RedirectStandardError = true;
+                                startInfo.RedirectStandardInput = true;
 
-                    Logger.Info(startInfo.FileName + " process starting");
-                    using (Process process = new Process())
-                    {
-                        process.StartInfo = startInfo;
+                                startInfo.Arguments = args;
 
-                        process.OutputDataReceived += (s, e) =>
-                        { if (pipe != null && !string.IsNullOrEmpty(e.Data))
-                                pipe.WriteString(e.Data);
-                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
-                                ProcessOutput(e.Data);
-                        };
-                        process.ErrorDataReceived += (s, e) =>
-                        {
-                            if (pipe != null && !string.IsNullOrEmpty(e.Data))
-                                pipe.WriteString(e.Data);
-                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
-                                ProcessOutput(e.Data);
-                        };
-                        ferrum = process;
-                        Logger.Info(startInfo.FileName + " process started");
-                        process.Start();
+                                Logger.Info(startInfo.FileName + " process starting");
+                                using (Process process = new Process())
+                                {
+                                    process.StartInfo = startInfo;
 
-                        process.BeginErrorReadLine();
-                        process.BeginOutputReadLine();
+                                    process.OutputDataReceived += (s, e) =>
+                                    {
+                                        try
+                                        {
+                                            if (pipe != null && !string.IsNullOrEmpty(e.Data))
+                                                pipe.WriteString(e.Data);
+                                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
+                                                ProcessOutput(e.Data);
+                                        }
+                                        catch (Exception ignored) { }
+                                    };
+                                    process.ErrorDataReceived += (s, e) =>
+                                    {
+                                        try
+                                        {
+                                            if (pipe != null && !string.IsNullOrEmpty(e.Data))
+                                                pipe.WriteString(e.Data);
+                                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
+                                                ProcessOutput(e.Data);
+                                        }
+                                        catch (Exception ignored) { }
+                                    };
+                                    ferrum = process;
+                                    Logger.Info(startInfo.FileName + " process started");
+                                    process.Start();
+                                    pipe.WriteString("process started:");
 
-                        process.WaitForExit();
-                        Logger.Info(startInfo.FileName + " process finished");
+                                    process.BeginErrorReadLine();
+                                    process.BeginOutputReadLine();
+                                    process.WaitForExit();
+                                    Logger.Info(startInfo.FileName + " process finished");
+
+                                    pipe.WriteString("process exit:");
+                                }
+                            }
+                            catch (Exception err)
+                            {
+                                try//if pipe is broken, make it safe
+                                {
+                                    pipe.WriteString(err.ToString());
+                                    pipe.WriteString("process exit:");
+                                }
+                                catch (Exception ignored)
+                                { };
+                            }
+
+                        }
 
                     }
-                }
-                catch (Exception ex)
-                {
-                    ferrum = null;
-                    Logger.Error(ex.GetAllMessages());
+                    catch (Exception ex)
+                    {
+                        ferrum = null;
+                        Logger.Error(ex.GetAllMessages());
 
-                }
-            });
-                    
+                    }
+                    finally
+                    {
+                        KillAllProcess(ProcessName);
+                        if(!waitEventSignaled)
+                        waitEvent.Set();
+                        ProcessManager.Task = null;
+                    }
 
+                });
+                waitEvent.WaitOne();
+            }
+            return pipeName;
            
         }
 
@@ -120,7 +169,7 @@ namespace FerrumGateService.Helper
                 Logger.Error("killing process failed:"+ex.GetAllMessages());
             }
         }
-        public static void Start(PipeServer pipe, string[]args)
+        public static string Start(string args)
         {
             
             Logger.Info("starting ferrum process");
@@ -129,7 +178,8 @@ namespace FerrumGateService.Helper
                 Logger.Error("current user is not in administrators");
                 throw new ApplicationException("current user is not in administrators");
             }
-            StartFerrum(pipe,args);
+            
+            return StartFerrum(args);
         }
 
 
@@ -150,6 +200,12 @@ namespace FerrumGateService.Helper
             }
             KillAllProcess(ProcessName);
             Logger.Info("stoped service");
+        }
+
+        public static bool IsWorking()
+        {
+            System.Diagnostics.Process[] process = Process.GetProcessesByName(ProcessName.Replace(".exe", ""));
+            return process.Length> 0;
         }
     }
 }

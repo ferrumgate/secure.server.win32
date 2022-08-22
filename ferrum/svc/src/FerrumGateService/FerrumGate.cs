@@ -1,29 +1,26 @@
 ﻿using FerrumGateService.Helper;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+
 
 namespace FerrumGateService
 {
+    /// <summary>
+    /// ipc server controller
+    /// </summary>
     internal class FerrumGate
     {
         
         
-
+        /// <summary>
+        /// start ipc listening server
+        /// </summary>
         public static void StartAsService()
         {
 
             try
             {
                 
-                IPCServer.Start("ferrumgate", 10, int.MaxValue, 5000);
+                IPCServer.Start("ferrumgate", 10, int.MaxValue, int.MaxValue);
 
             }
             catch (Exception ex)
@@ -32,14 +29,24 @@ namespace FerrumGateService
             }
 
         }
-
+        /// <summary>
+        /// stop ipc listening server
+        /// </summary>
         public static void StopAsService()
         {
             IPCServer.Stop(); 
 
         }
-        
-                     
+        /// <summary>
+        /// Waits current listening ipc server
+        /// </summary>
+        public static void WaitAsService()
+        {
+            IPCServer.Wait();
+
+        }
+
+
     }
 
 

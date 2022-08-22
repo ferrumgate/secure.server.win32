@@ -74,7 +74,22 @@ namespace FerrumGateService.Helper
 
         internal static void Debug(String msg)
         {
-            Console.WriteLine(msg);
+#if DEBUG
+            try
+            {
+                if (msg != null)
+                {
+                    Console.WriteLine(msg);
+                    if (eventlog != null)
+                        eventlog.WriteEntry(msg, EventLogEntryType.Information);
+                }
+            }
+            catch (Exception ignored)
+            {
+                Console.WriteLine(ignored.ToString());
+            }
+        
+#endif
         }
     }
 }

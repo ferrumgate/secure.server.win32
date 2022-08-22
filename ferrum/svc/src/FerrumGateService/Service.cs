@@ -54,5 +54,14 @@ namespace FerrumGateService
            
             
         }
+        
+        /// <summary>
+        /// wait current service to stop,
+        /// used for tests
+        /// </summary>
+        public void Wait()
+        {
+            FerrumGate.WaitAsService();
+        }
     }
 }

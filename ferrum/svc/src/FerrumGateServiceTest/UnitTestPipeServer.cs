@@ -17,7 +17,7 @@ namespace FerrumGateServiceTest
         public void TestMethodConnectThrowsExceptions()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
-            using (PipeServer server = new PipeServer("hamza", cts.Token, 100))
+            using (PipeServer server = new PipeServer("xman", cts.Token, 100))
             {
                 server.WaitForConnection();
             }
@@ -30,7 +30,7 @@ namespace FerrumGateServiceTest
         public void TestMethodConnectThrowsExceptionsBecauseofCanceltoken()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
-            using (PipeServer server = new PipeServer("hamza", cts.Token, 100000))
+            using (PipeServer server = new PipeServer("xman", cts.Token, 100000))
             {
                 Task.Run(() =>
                 {
@@ -62,7 +62,7 @@ namespace FerrumGateServiceTest
         [TestMethod]
         public void TestMethodConnectsAndSendsData()
         {
-            string pipeName = "hamza";
+            string pipeName = "xman";
             Task serverTask = Task.Run(() =>
               {
                   using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -106,7 +106,7 @@ namespace FerrumGateServiceTest
         [ExpectedException(typeof(TimeoutException))]
         public void TestMethodConnectsAndSendsDataSlow()
         {
-            string pipeName = "hamza";
+            string pipeName = "xman";
             Task serverTask = Task.Run(() =>
             {
                 using (CancellationTokenSource cts = new CancellationTokenSource())
@@ -151,7 +151,7 @@ namespace FerrumGateServiceTest
         [TestMethod]
         public void TestMethodConnectsAndClientsReadData()
         {
-            string pipeName = "hamza";
+            string pipeName = "xman";
             Task serverTask = Task.Run(() =>
             {
                 using (CancellationTokenSource cts = new CancellationTokenSource())

@@ -39,14 +39,21 @@ namespace FerrumGateService.Helper
                          using (PipeServer server = new PipeServer(pipeName, cts.Token, connectTimeout, readWriteTimeout, maxInstanceCount))
                          {
                              IPCServer.Where = Status.Connect;
+                             Logger.Info("waiting for client");
                              server.WaitForConnection();
                              while (Work)
                              {
+                                 Logger.Debug("waiting for command");
                                  var cmd = server.ReadString();
-                                 Logger.Debug(String.Format("command received {0}", cmd));
+                                 Logger.Info(String.Format("command received > {0}", cmd));
+                                 if (cmd == "ping")
+                                 {
+                                     server.WriteString("pong");
+                                 }else
                                  if (cmd == "exit")
                                  {
                                      IPCServer.Where = Status.Exit;
+                                     Work = false;
                                      break;
                                  }
                                  else
@@ -61,8 +68,19 @@ namespace FerrumGateService.Helper
                                  if (cmd.StartsWith("connect"))// connect to 
                                  {
                                      IPCServer.Where = Status.Connecting;
-                                     var values = cmd.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-                                     ProcessManager.Start(server, values);
+                                     //-F ssh_config -N -o "StrictHostKeyChecking no" - w any ferrum@192.168.43.44 -p3333
+                                     var arguments = cmd.Replace("connect", "").Trim();
+                                     var pipename= ProcessManager.Start(arguments);
+                                     server.WriteString("connect to:"+pipename);
+
+                                 }
+                                 else
+                                   if (cmd.StartsWith("isWorking"))// connect to 
+                                 {
+                                     
+                                   
+                                     var isWorking = ProcessManager.IsWorking();
+                                     server.WriteString(isWorking?"true":"false");
 
                                  }
                                  else
@@ -77,6 +95,7 @@ namespace FerrumGateService.Helper
                                  if (cmd.StartsWith("disconnect"))
                                  {
                                      IPCServer.Where = Status.Disconnecting;
+                                     ProcessManager.KillAllProcess(ProcessManager.ProcessName);
 
                                  }
                                  else
@@ -87,14 +106,17 @@ namespace FerrumGateService.Helper
                                  }
                              }
                          }
+                         
 
 
                      }
                      catch (Exception ex)
                      {
                          Logger.Error(ex.GetAllMessages());
+                         Thread.Sleep(1000);// if any error occures, wait 1s at least
                      }
-                 }            
+                 }
+                 Logger.Info("ipc stopped");
 
 
              });
@@ -108,11 +130,18 @@ namespace FerrumGateService.Helper
             IPCServer.cts.Cancel();
             if (IPCServer.currentTask != null)
             {
+                ProcessManager.KillAllProcess(ProcessManager.ProcessName);
                 IPCServer.currentTask.Wait();
+                IPCServer.currentTask = null;
             }
 
             
 
+        }
+        public static void Wait()
+        {
+            if(IPCServer.currentTask!=null)
+            IPCServer.currentTask.Wait();
         }
       
 

@@ -110,6 +110,8 @@ namespace FerrumGateService.Helper.IPC
                     byte[] temp = new byte[ReadedSize];//gelen datayı kopyala
                     Array.Copy(Buffer, temp, ReadedSize);
                     datas.Add(temp);//gelen listesine ekle
+                    ReadedSize = 0;
+                    this.Door.Reset();
                 }               
 
 
@@ -157,11 +159,10 @@ namespace FerrumGateService.Helper.IPC
             this.Stream.BeginWrite(resultBuffer, 0, resultBuffer.Length, OnWrite, this);
             int waitIndex = WaitHandle.WaitAny(new WaitHandle[] { Door, this.cancelToken.WaitHandle }, this.readWriteTimeout);
             if (waitIndex == 1 || waitIndex == WaitHandle.WaitTimeout || this.cancelToken.IsCancellationRequested)
-            //if (!this.Door.WaitOne(this.readWriteTimeout))
             {
                 throw new TimeoutException("Write timeout");
             }
-            //burası tcp gibi çalışmasını sağlar
+            //this works like tcp
            // Stream.WaitForPipeDrain();
         }
 

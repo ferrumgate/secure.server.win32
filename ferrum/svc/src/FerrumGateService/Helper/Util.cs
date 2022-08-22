@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -64,10 +63,6 @@ namespace FerrumGateService.Helper
         }
 
        
-        internal static string ToJson(IDictionary savedState)
-        {
-            return JsonConvert.SerializeObject(savedState);
-        }
 
         internal static IList<String> Dnsservers()
         {

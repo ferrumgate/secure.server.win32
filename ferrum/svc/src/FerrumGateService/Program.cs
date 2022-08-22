@@ -1,6 +1,5 @@
 ﻿using FerrumGateService.Helper;
 using FerrumGateService.Helper.IPC;
-using FerrumGateService.UI;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -32,54 +31,30 @@ namespace FerrumGateService
        
 
 
-        static void TestIPC()
-        {
-
-            while (true)
-            {
-                try
-                {
-                    using (CancellationTokenSource cts = new CancellationTokenSource())
-                    using (PipeServer server = new PipeServer("deneme", cts.Token, int.MaxValue, int.MaxValue))
-                    {
-                        server.WaitForConnection();
-                        Console.WriteLine("client connected");
-                        while (true)
-                        {
-                            var msg = server.ReadString();
-                            Console.WriteLine("client sended:" + msg+ " len:"+msg.Length);
-                            server.WriteString(msg);
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.GetAllMessages());
-                }
-            }
-        }
 
 
         [STAThread]
         public static void Main(string[] args)
-        {
-            
-
-
-            if (Environment.UserInteractive)
+        {   
+            //no support for x86
+            if (!Environment.Is64BitOperatingSystem)
             {
+                Logger.Error("Environment is not 64 bit");
+                Environment.Exit(1);
+            }
 
+            if (Environment.UserInteractive || (args.Length==1 && args[0]=="interactive"))
+            {
+               
                 try
                 {
                    
                     
-                    AttachConsole(ATTACH_PARENT_PROCESS);
-                    
+                        AttachConsole(ATTACH_PARENT_PROCESS);
+                    Console.WriteLine("process is interactive");
 
-                   
 
-                        Application.EnableVisualStyles();
+                    Application.EnableVisualStyles();
                         Application.SetCompatibleTextRenderingDefault(false);
                        
 
@@ -89,10 +64,11 @@ namespace FerrumGateService
                         {
                            
                         };
-                       
-                        Application.Run(new MainForm());
-                    
-                    Console.WriteLine("Process exited");
+
+                   var svc= new Service();
+                    svc.Start();
+                    svc.Wait();
+                    Console.WriteLine("process exited");
 
 
                 }
@@ -104,6 +80,7 @@ namespace FerrumGateService
             }
             else
             {
+                Console.WriteLine("process is not interactive");
                 ServiceBase[] ServicesToRun;
                 ServicesToRun = new ServiceBase[]
                 {
