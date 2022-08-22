@@ -1209,7 +1209,7 @@ readpassphrase(const char *prompt, char *outBuf, size_t outBufLen, int flags)
 		errno = EINVAL;
 		return NULL;
 	}
-
+#ifndef FERRUM_WIN32
 	while (_kbhit()) _getwch();
 
 	wtmp = utf8_to_utf16(prompt);
@@ -1219,7 +1219,7 @@ readpassphrase(const char *prompt, char *outBuf, size_t outBufLen, int flags)
 	_cputws(wtmp);
 	free(wtmp);
 
-#ifndef FERRUM_WIN32
+
 	while (current_index < (int)outBufLen - 1) {
 		ch = _getwch();
 		
@@ -1272,6 +1272,7 @@ readpassphrase(const char *prompt, char *outBuf, size_t outBufLen, int flags)
 	outBuf[current_index] = '\0';
 	_cputs("\n");
 #else
+	fprintf(stderr, "%s\n", prompt);
 	outBuf[current_index++] = '\n';
 	outBuf[current_index] = '0';
 	_cputs("\n");
