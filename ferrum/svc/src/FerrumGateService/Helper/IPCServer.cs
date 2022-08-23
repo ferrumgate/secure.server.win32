@@ -108,7 +108,7 @@ namespace FerrumGateService.Helper
                                          IPCServer.Where = Status.Settings;
                                          var values = cmd.Substring(8).Trim().Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
                                          //network assignedIp:${iplist.assignedIp} serviceNetwork:${iplist.serviceNetwork}`)
-                                         if (values.Length == 2)
+                                         if (values.Length != 2)
                                          {
                                              server.WriteString("network failed");
 
@@ -117,6 +117,22 @@ namespace FerrumGateService.Helper
                                          {
                                             var assignedIP= values[0].Split(':')[1];
                                             var network = values[1].Split(':')[1];
+                                             bool isErrored = false;
+
+                                             //catch exception because we want to write message to client
+                                             try
+                                             {
+                                                 NetworkManager.SetIP("FerrumGate", assignedIP, network);
+                                                 
+                                             }catch(Exception err)
+                                             {
+                                                 isErrored = true;
+                                                 Logger.Error(err.GetAllMessages());
+                                             }
+                                             if(!isErrored)
+                                             server.WriteString("network ok");
+                                             else
+                                             server.WriteString("network failed");
 
                                          }
 

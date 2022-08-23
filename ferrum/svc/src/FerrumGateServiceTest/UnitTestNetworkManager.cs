@@ -37,7 +37,7 @@ namespace FerrumGateServiceTest
             bool ipFound = false;
             foreach(var ip in iplist)
             {
-                if (ip.Address.ToString() == "192.168.1.2")
+                if (ip.Address.ToString() == "192.168.1.3")
                     ipFound = true;
             }
             Assert.IsTrue(ipFound);

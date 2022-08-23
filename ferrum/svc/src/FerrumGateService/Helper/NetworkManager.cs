@@ -10,6 +10,23 @@ namespace FerrumGateService.Helper
 {
     public class NetworkManager
     {
+        private static void ExecuteCmd(string cmd)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe");
+            psi.UseShellExecute = false;
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardOutput = true;
+            //psi.Verb = "runas";
+            psi.Arguments = cmd;
+            var p = Process.Start(psi);
+            var output = p.StandardOutput.ReadToEnd();
+            var error = p.StandardError.ReadToEnd();
+            p.WaitForExit();
+            if (p.ExitCode != 0)
+                throw new ApplicationException("setting ip failed with:" + output + " " + error);
+
+        }
         public static void SetIP(string interfacename,String ip, String route)
         {
             var interfaces=NetworkInterface.GetAllNetworkInterfaces();
@@ -19,19 +36,11 @@ namespace FerrumGateService.Helper
 
             var index = ferrumInterface.GetIPProperties().GetIPv4Properties().Index;
 
-            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe");
-            psi.UseShellExecute = false;
-            psi.WindowStyle = ProcessWindowStyle.Hidden;
-            psi.RedirectStandardError = true;
-            psi.RedirectStandardOutput = true;
-            //psi.Verb = "runas";
-            psi.Arguments = "/c netsh interface ipv4 set address \""+interfacename+"\" static "+ip+" 255.255.255.255";
-            var p=Process.Start(psi);
-            var output = p.StandardOutput.ReadToEnd();
-            var error = p.StandardError.ReadToEnd();
-            p.WaitForExit();
-            if (p.ExitCode != 0)
-                throw new ApplicationException("setting ip failed with:"+output+  " "+error);
+
+            ExecuteCmd("/c netsh interface ipv4 set address \"" + interfacename + "\" static " + ip + " 255.255.255.255");
+            ExecuteCmd("/c route ADD "+route+" "+ip+" IF "+index);
+
+           
 
 
         }
