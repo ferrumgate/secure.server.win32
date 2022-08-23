@@ -22,13 +22,11 @@ namespace FerrumGateService.Helper
         
         public delegate void ProcessOutputHandler(string output);
         public static ProcessOutputHandler ProcessOutput = null;
-        private static string StartFerrum(String args)
+        private static string StartFerrum(String args,AutoResetEvent are)
         {
-            string pipeName = Guid.NewGuid().ToString().Replace("-", "");
+               string pipeName = Guid.NewGuid().ToString().Replace("-", "");
             
-            using (AutoResetEvent waitEvent = new AutoResetEvent(false))//wait pipe for start
-            {
-                bool waitEventSignaled = false;
+
                 ProcessManager.Task= Task.Run(() =>
                 {
                     KillAllProcess(ProcessName);
@@ -39,8 +37,7 @@ namespace FerrumGateService.Helper
                         using (var cts = new CancellationTokenSource())
                         using (PipeServer pipe = new PipeServer("ferrumgate_" + pipeName, cts.Token, 5000, int.MaxValue, 10))
                         {
-                            waitEvent.Set();
-                            waitEventSignaled = true;
+                            are.Set();//pipe opened
                             pipe.WaitForConnection();
 
                             try // we need this if pipe is successfull
@@ -126,14 +123,12 @@ namespace FerrumGateService.Helper
                     finally
                     {
                         KillAllProcess(ProcessName);
-                        if(!waitEventSignaled)
-                        waitEvent.Set();
+
                         ProcessManager.Task = null;
                     }
 
                 });
-                waitEvent.WaitOne();
-            }
+  
             return pipeName;
            
         }
@@ -169,7 +164,7 @@ namespace FerrumGateService.Helper
                 Logger.Error("killing process failed:"+ex.GetAllMessages());
             }
         }
-        public static string Start(string args)
+        public static string Start(string args,AutoResetEvent are)
         {
             
             Logger.Info("starting ferrum process");
@@ -179,7 +174,7 @@ namespace FerrumGateService.Helper
                 throw new ApplicationException("current user is not in administrators");
             }
             
-            return StartFerrum(args);
+            return StartFerrum(args,are);
         }
 
 

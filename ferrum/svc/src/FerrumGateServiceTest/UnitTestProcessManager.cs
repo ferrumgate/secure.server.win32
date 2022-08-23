@@ -3,6 +3,7 @@ using FerrumGateService.Helper.IPC;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FerrumGateServiceTest
 {
@@ -14,31 +15,75 @@ namespace FerrumGateServiceTest
         {
             String d = "";
             ProcessManager.ProcessOutput = (data) => d+=data;
-            string pipename=ProcessManager.Start("ls" );
-            Thread.Sleep(1000);
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            using (PipeClient client = new PipeClient("ferrumgate_"+pipename, cts.Token))
+            using (AutoResetEvent areprocess = new AutoResetEvent(false))
+            using (AutoResetEvent are = new AutoResetEvent(false))
             {
-                client.ReadString();
-                Thread.Sleep(5000);
-                ProcessManager.Stop();
+                Task.Run(() =>
+                {
+                    using (CancellationTokenSource cts = new CancellationTokenSource())
+                    using (PipeServer server = new PipeServer("testme", cts.Token))
+                    {
+                        server.WaitForConnection();
+                        string pipename = ProcessManager.Start("ls", areprocess);
+                        areprocess.WaitOne();
+                        server.WriteString("connect to:" + pipename);
+                        are.WaitOne();
+                    }
+                });
+
+                using (CancellationTokenSource cts = new CancellationTokenSource())
+                using (PipeClient client1 = new PipeClient("testme", cts.Token))
+                {
+                    var pipename = client1.ReadString();
+                    pipename = pipename.Replace("connect to:", "");
+                    using (PipeClient client = new PipeClient("ferrumgate_" + pipename, cts.Token))
+                    {
+                        client.ReadString();
+                        Thread.Sleep(5000);
+                        ProcessManager.Stop();
+                    }
+                }
+                are.Set();
+                Assert.IsTrue(!String.IsNullOrEmpty(d));
             }
-            Assert.IsTrue(!String.IsNullOrEmpty(d));
         }
         [TestMethod]
         public void TestMethodIsWorking()
         {
             String d = "";
             ProcessManager.ProcessOutput = (data) => d += data;
-            string pipename = ProcessManager.Start("sleep 5");
-            Thread.Sleep(1000);
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            using (PipeClient client = new PipeClient("ferrumgate_" + pipename, cts.Token))
+            using (AutoResetEvent areProcess = new AutoResetEvent(false))
+            using (AutoResetEvent are = new AutoResetEvent(false))
             {
-                client.ReadString();
-                Thread.Sleep(2000);
-                var isWorking = ProcessManager.IsWorking();
-                Assert.IsTrue(isWorking);
+                Task.Run(() =>
+                {
+                    using (CancellationTokenSource cts = new CancellationTokenSource())
+                    using (PipeServer server = new PipeServer("testyou", cts.Token))
+                    {
+                        server.WaitForConnection();
+                        string pipename = ProcessManager.Start("sleep 5", areProcess);
+                        areProcess.WaitOne();
+                        server.WriteString("connect to:" + pipename);
+                        are.WaitOne();
+                    }
+                });
+
+
+                using (CancellationTokenSource cts = new CancellationTokenSource())
+                using (PipeClient client1 = new PipeClient("testyou", cts.Token))
+                {
+
+                    var pipename = client1.ReadString();
+                    pipename = pipename.Replace("connect to:", "");
+                    using (PipeClient client = new PipeClient("ferrumgate_" + pipename, cts.Token))
+                    {
+                        client.ReadString();
+                        Thread.Sleep(2000);
+                        var isWorking = ProcessManager.IsWorking();
+                        Assert.IsTrue(isWorking);
+                    }
+                }
+                are.Set();
             }
             
             

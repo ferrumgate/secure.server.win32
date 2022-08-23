@@ -98,12 +98,12 @@ namespace FerrumGateService.Helper.IPC
                 if (waitIndex == 1 || waitIndex == WaitHandle.WaitTimeout || this.cancelToken.IsCancellationRequested)
                 //if (!Door.WaitOne(this.readWriteTimeout))
                 {
-                    throw new TimeoutException("Read timeout");
+                    throw new TimeoutException("read timeout");
 
                 }
                 if (ReadedSize == 0)
                 {
-                    throw new IOException("No data");
+                    throw new IOException("no data");
                 }
                 if (ReadedSize > 0)
                 {
@@ -160,7 +160,7 @@ namespace FerrumGateService.Helper.IPC
             int waitIndex = WaitHandle.WaitAny(new WaitHandle[] { Door, this.cancelToken.WaitHandle }, this.readWriteTimeout);
             if (waitIndex == 1 || waitIndex == WaitHandle.WaitTimeout || this.cancelToken.IsCancellationRequested)
             {
-                throw new TimeoutException("Write timeout");
+                throw new TimeoutException("write timeout");
             }
             //this works like tcp
            // Stream.WaitForPipeDrain();

@@ -27,15 +27,20 @@ namespace FerrumGateService.Helper
          */
         public static Task Start(string pipeName, int maxInstanceCount, int connectTimeout = 2000, int readWriteTimeout = 5000)
         {
+            if (IPCServer.currentTask != null)
+                return IPCServer.currentTask;
+
             IPCServer.currentTask = Task.Run(() =>
              {
                  IPCServer.Where = Status.Exit;
                  Work = true;
+                 using(cts=new CancellationTokenSource())
                  while (Work)
                  {
                      try
                      {
-                         using (cts = new CancellationTokenSource())
+                        
+                         
                          using (PipeServer server = new PipeServer(pipeName, cts.Token, connectTimeout, readWriteTimeout, maxInstanceCount))
                          {
                              IPCServer.Where = Status.Connect;
@@ -49,7 +54,8 @@ namespace FerrumGateService.Helper
                                  if (cmd == "ping")
                                  {
                                      server.WriteString("pong");
-                                 }else
+                                 }
+                                 else
                                  if (cmd == "exit")
                                  {
                                      IPCServer.Where = Status.Exit;
@@ -70,17 +76,22 @@ namespace FerrumGateService.Helper
                                      IPCServer.Where = Status.Connecting;
                                      //-F ssh_config -N -o "StrictHostKeyChecking no" - w any ferrum@192.168.43.44 -p3333
                                      var arguments = cmd.Replace("connect", "").Trim();
-                                     var pipename= ProcessManager.Start(arguments);
-                                     server.WriteString("connect to:"+pipename);
+                                         using (AutoResetEvent are = new AutoResetEvent(false))//wait for pipe start
+                                         {
+                                             var pipename = ProcessManager.Start(arguments,are);
+                                             are.WaitOne(3000);
+                                             server.WriteString("connect to:" + pipename);
+                                         }
+                                     
 
                                  }
                                  else
                                    if (cmd.StartsWith("isWorking"))// connect to 
                                  {
-                                     
-                                   
+
+
                                      var isWorking = ProcessManager.IsWorking();
-                                     server.WriteString(isWorking?"true":"false");
+                                     server.WriteString(isWorking ? "true" : "false");
 
                                  }
                                  else
@@ -92,6 +103,26 @@ namespace FerrumGateService.Helper
 
                                  }
                                  else
+                                  if (cmd.StartsWith("network"))
+                                     {
+                                         IPCServer.Where = Status.Settings;
+                                         var values = cmd.Substring(8).Trim().Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+                                         //network assignedIp:${iplist.assignedIp} serviceNetwork:${iplist.serviceNetwork}`)
+                                         if (values.Length == 2)
+                                         {
+                                             server.WriteString("network failed");
+
+                                         }
+                                         else
+                                         {
+                                            var assignedIP= values[0].Split(':')[1];
+                                            var network = values[1].Split(':')[1];
+
+                                         }
+
+
+                                     }
+                                     else
                                  if (cmd.StartsWith("disconnect"))
                                  {
                                      IPCServer.Where = Status.Disconnecting;
@@ -112,10 +143,16 @@ namespace FerrumGateService.Helper
                      }
                      catch (Exception ex)
                      {
+                         
                          Logger.Error(ex.GetAllMessages());
                          Thread.Sleep(1000);// if any error occures, wait 1s at least
                      }
+                     finally
+                     {
+                       
+                     }
                  }
+                 
                  Logger.Info("ipc stopped");
 
 
@@ -127,12 +164,15 @@ namespace FerrumGateService.Helper
         public static void Stop()
         {
             Work = false;
-            IPCServer.cts.Cancel();
+            ProcessManager.KillAllProcess(ProcessManager.ProcessName);            
             if (IPCServer.currentTask != null)
             {
+                cts.Cancel();
                 ProcessManager.KillAllProcess(ProcessManager.ProcessName);
                 IPCServer.currentTask.Wait();
                 IPCServer.currentTask = null;
+                cts = null;
+               
             }
 
             

@@ -34,7 +34,14 @@ namespace FerrumGateService
         /// </summary>
         public static void StopAsService()
         {
-            IPCServer.Stop(); 
+            try
+            {
+                IPCServer.Stop();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.GetAllMessages());
+            }
 
         }
         /// <summary>
@@ -42,7 +49,13 @@ namespace FerrumGateService
         /// </summary>
         public static void WaitAsService()
         {
+            try { 
             IPCServer.Wait();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.GetAllMessages());
+            }
 
         }
 
