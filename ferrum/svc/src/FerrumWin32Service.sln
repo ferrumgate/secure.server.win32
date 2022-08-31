@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E8C42C30-9CF1-4B72-87A0-602DD195B598}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{AF8A6F23-7655-494A-B55D-20446056FFFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FerrumGateService", "FerrumGateService\FerrumGateService.csproj", "{4DEF9314-9D04-44BC-ACA4-5B83BC7A0E83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FerrumGateConsoleClient", "FerrumGateConsoleClient\FerrumGateConsoleClient.csproj", "{50BD2291-51B5-4955-A349-DD0B1EF8EAA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FerrumGateServiceTest", "FerrumGateServiceTest\FerrumGateServiceTest.csproj", "{0FFC0531-9A5B-4F31-82A4-8E87969129F0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DEF9314-9D04-44BC-ACA4-5B83BC7A0E83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DEF9314-9D04-44BC-ACA4-5B83BC7A0E83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DEF9314-9D04-44BC-ACA4-5B83BC7A0E83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DEF9314-9D04-44BC-ACA4-5B83BC7A0E83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50BD2291-51B5-4955-A349-DD0B1EF8EAA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50BD2291-51B5-4955-A349-DD0B1EF8EAA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50BD2291-51B5-4955-A349-DD0B1EF8EAA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50BD2291-51B5-4955-A349-DD0B1EF8EAA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FFC0531-9A5B-4F31-82A4-8E87969129F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FFC0531-9A5B-4F31-82A4-8E87969129F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FFC0531-9A5B-4F31-82A4-8E87969129F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FFC0531-9A5B-4F31-82A4-8E87969129F0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {54769217-4B3F-4F82-96AE-8A1BACE8B29A}
+	EndGlobalSection
+EndGlobal
