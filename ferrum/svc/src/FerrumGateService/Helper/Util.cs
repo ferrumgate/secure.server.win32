@@ -139,28 +139,31 @@ namespace FerrumGateService.Helper
         }
 
 
-        public static string ComputeSHA256(string plainText)
+       
+        public static string ComputeSHA256(Stream ms)
         {
             // Salt size
             using (SHA256 mySHA256 = SHA256.Create())
             {
-                using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(plainText)))
-                {
+               
+                
                     var data = mySHA256.ComputeHash(ms);
                     return ByteArrayToString(data);//hexencoded
-                }
+                
             }
         }
-        public static bool VerifySHA256(string plainText,                               
+        public static bool VerifySHA256(Stream datas,                               
                                   string hashValue)
         {
             // Hex-encoded hash
-            var expectedHashString = ComputeSHA256(plainText);
+            var expectedHashString = ComputeSHA256(datas);
             return (hashValue == expectedHashString);
         }
 
+       
 
-      
+
+
 
     }
     public static class Extensions

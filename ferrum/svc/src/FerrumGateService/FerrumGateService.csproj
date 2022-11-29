@@ -114,19 +114,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FerrumGate.cs" />
-    <Compile Include="Helper\NetworkManager.cs" />
+    <Compile Include="Helper\IPCServer.cs" />
+    <Compile Include="Helper\ProcessManager.cs" />
     <Compile Include="Service.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Service.Designer.cs">
       <DependentUpon>Service.cs</DependentUpon>
     </Compile>
-    <Compile Include="Helper\IPCServer.cs" />
     <Compile Include="Helper\IPC\PipeClient.cs" />
     <Compile Include="Helper\IPC\PipeServer.cs" />
     <Compile Include="Helper\IPC\StreamReadWriter.cs" />
     <Compile Include="Helper\Logger.cs" />
-    <Compile Include="Helper\ProcessManager.cs" />
     <Compile Include="Helper\CurrentUser.cs" />
     <Compile Include="Helper\Util.cs" />
     <Compile Include="Program.cs" />

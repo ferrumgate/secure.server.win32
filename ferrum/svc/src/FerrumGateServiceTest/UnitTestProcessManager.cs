@@ -2,6 +2,7 @@
 using FerrumGateService.Helper.IPC;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,80 +14,51 @@ namespace FerrumGateServiceTest
         [TestMethod]
         public void TestMethodStart()
         {
-            String d = "";
-            ProcessManager.ProcessOutput = (data) => d+=data;
-            using (AutoResetEvent areprocess = new AutoResetEvent(false))
-            using (AutoResetEvent are = new AutoResetEvent(false))
-            {
-                Task.Run(() =>
-                {
-                    using (CancellationTokenSource cts = new CancellationTokenSource())
-                    using (PipeServer server = new PipeServer("testme", cts.Token))
-                    {
-                        server.WaitForConnection();
-                        string pipename = ProcessManager.Start("ls", areprocess);
-                        areprocess.WaitOne();
-                        server.WriteString("connect to:" + pipename);
-                        are.WaitOne();
-                    }
-                });
+            
+                
+                
+                   
+            int pid= ProcessManager.Start("","");
 
-                using (CancellationTokenSource cts = new CancellationTokenSource())
-                using (PipeClient client1 = new PipeClient("testme", cts.Token))
-                {
-                    var pipename = client1.ReadString();
-                    pipename = pipename.Replace("connect to:", "");
-                    using (PipeClient client = new PipeClient("ferrumgate_" + pipename, cts.Token))
-                    {
-                        client.ReadString();
-                        Thread.Sleep(5000);
-                        ProcessManager.Stop();
-                    }
-                }
-                are.Set();
-                Assert.IsTrue(!String.IsNullOrEmpty(d));
-            }
+            var pr= System.Diagnostics.Process.GetProcessById(pid);
+            Assert.IsNotNull(pr);
+            pr.Kill();
+
+
+
         }
         [TestMethod]
-        public void TestMethodIsWorking()
+        [ExpectedException(typeof(ApplicationException))]
+        public void TestMethodCheckHash()
         {
-            String d = "";
-            ProcessManager.ProcessOutput = (data) => d += data;
-            using (AutoResetEvent areProcess = new AutoResetEvent(false))
-            using (AutoResetEvent are = new AutoResetEvent(false))
-            {
-                Task.Run(() =>
-                {
-                    using (CancellationTokenSource cts = new CancellationTokenSource())
-                    using (PipeServer server = new PipeServer("testyou", cts.Token))
-                    {
-                        server.WaitForConnection();
-                        string pipename = ProcessManager.Start("sleep 5", areProcess);
-                        areProcess.WaitOne();
-                        server.WriteString("connect to:" + pipename);
-                        are.WaitOne();
-                    }
-                });
 
 
-                using (CancellationTokenSource cts = new CancellationTokenSource())
-                using (PipeClient client1 = new PipeClient("testyou", cts.Token))
-                {
-
-                    var pipename = client1.ReadString();
-                    pipename = pipename.Replace("connect to:", "");
-                    using (PipeClient client = new PipeClient("ferrumgate_" + pipename, cts.Token))
-                    {
-                        client.ReadString();
-                        Thread.Sleep(2000);
-                        var isWorking = ProcessManager.IsWorking();
-                        Assert.IsTrue(isWorking);
-                    }
-                }
-                are.Set();
-            }
+            File.WriteAllText(ProcessManager.ProcessName, "test");
             
-            
+
+            int pid = ProcessManager.Start("","","somthing");
+
+
         }
+
+        [TestMethod]
+        
+        public void TestMethodCheckHashNoException()
+        {
+            
+
+            File.WriteAllText(ProcessManager.ProcessName, "test");
+            using (var ms = new FileStream(ProcessManager.ProcessName, FileMode.Open)) {
+                var hash = Util.ComputeSHA256(ms);
+
+                int pid = ProcessManager.Start("", "", hash);
+                var pr = System.Diagnostics.Process.GetProcessById(pid);
+                Assert.IsNotNull(pr);
+                pr.Kill();
+            }
+
+
+        }
+
     }
 }

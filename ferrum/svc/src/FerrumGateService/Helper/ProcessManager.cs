@@ -5,202 +5,126 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using FerrumGateService.Helper.IPC;
+using System.Configuration;
 
 namespace FerrumGateService.Helper
 {
     public class ProcessManager
     {
-        #if !DEBUG
-        public const string ProcessName = "ssh_ferrum.exe";
-        #else
-        public const string ProcessName = "powershell.exe";
-        #endif
-
-        
-        static Process ferrum = null;
-        public static Task Task = null;
-        
-        public delegate void ProcessOutputHandler(string output);
-        public static ProcessOutputHandler ProcessOutput = null;
-        private static string StartFerrum(String args,AutoResetEvent are)
-        {
-               string pipeName = Guid.NewGuid().ToString().Replace("-", "");
-            
-
-                ProcessManager.Task= Task.Run(() =>
-                {
-                    KillAllProcess(ProcessName);
-
-                    try
-                    {
-                        Console.WriteLine("opening sub pipe ferrumgate_" + pipeName);
-                        using (var cts = new CancellationTokenSource())
-                        using (PipeServer pipe = new PipeServer("ferrumgate_" + pipeName, cts.Token, 5000, int.MaxValue, 10))
-                        {
-                            are.Set();//pipe opened
-                            pipe.WaitForConnection();
-
-                            try // we need this if pipe is successfull
-                            {
-                                ProcessStartInfo startInfo = new ProcessStartInfo();
 #if !DEBUG
-                                startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "External", Environment.Is64BitOperatingSystem ? "x64" : "x86", ProcessName);
+        public const string ProcessName = "FerrumGate.exe";
 #else
-                            startInfo.FileName = ProcessName;
+        public const string ProcessName = "powershell.exe";
+#endif
+        
+
+        private static void CheckFileHash(string hash)
+        {
+
+            if (string.IsNullOrEmpty(hash))
+            {
+                Logger.Info("hash of process is empty");
+                return;
+            }
+            using (FileStream st = new FileStream(ProcessName, FileMode.Open, FileAccess.Read))
+            {
+                bool result = Util.VerifySHA256(st, hash);
+                if (!result)
+                    throw new ApplicationException(ProcessName + " hash failed " + hash);
+            }
+
+        }
+
+        private static int StartFerrum(string url, string pipename,string hash="")
+        {
+
+
+
+
+
+            try // we need this if pipe is successfull
+            {
+
+                CheckFileHash(hash);
+
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+#if !DEBUG
+  startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..\\..\\..\\..\\..", ProcessName);
+                var workerJS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\", "worker.js");
+                            startInfo.Arguments = workerJS+" --url="+url+" --socket="+pipename;
+
+                startInfo.EnvironmentVariables.Add("ELECTRON_RUN_AS_NODE", "true");
+                startInfo.CreateNoWindow = true;
+                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                startInfo.UseShellExecute = false;
+                startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..");
+
+
+#else
+                startInfo.FileName = ProcessName;
 #endif
 
 
-                                startInfo.CreateNoWindow = true;
-                                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                                startInfo.UseShellExecute = false;
-                                startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "External", Environment.Is64BitOperatingSystem ? "x64" : "x86");
-                                startInfo.RedirectStandardOutput = true;
-                                startInfo.RedirectStandardError = true;
-                                startInfo.RedirectStandardInput = true;
 
-                                startInfo.Arguments = args;
 
-                                Logger.Info(startInfo.FileName + " process starting");
-                                using (Process process = new Process())
-                                {
-                                    process.StartInfo = startInfo;
 
-                                    process.OutputDataReceived += (s, e) =>
-                                    {
-                                        try
-                                        {
-                                            if (pipe != null && !string.IsNullOrEmpty(e.Data))
-                                                pipe.WriteString(e.Data);
-                                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
-                                                ProcessOutput(e.Data);
-                                        }
-                                        catch (Exception ignored) { }
-                                    };
-                                    process.ErrorDataReceived += (s, e) =>
-                                    {
-                                        try
-                                        {
-                                            if (pipe != null && !string.IsNullOrEmpty(e.Data))
-                                                pipe.WriteString(e.Data);
-                                            if (ProcessOutput != null && !string.IsNullOrEmpty(e.Data))
-                                                ProcessOutput(e.Data);
-                                        }
-                                        catch (Exception ignored) { }
-                                    };
-                                    ferrum = process;
-                                    Logger.Info(startInfo.FileName + " process started");
-                                    process.Start();
-                                    pipe.WriteString("process started:");
 
-                                    process.BeginErrorReadLine();
-                                    process.BeginOutputReadLine();
-                                    process.WaitForExit();
-                                    Logger.Info(startInfo.FileName + " process finished");
+                //startInfo.FileName = "C:/Users/test/Desktop/ferrum/secure.client/node_modules/.bin/electron.cmd";
+                //startInfo.Arguments = "C:/Users/test/Desktop/ferrum/secure.client/build/src --win32";
+                //startInfo.WorkingDirectory = "C:/Users/test/Desktop/ferrum/secure.client/build/src";
 
-                                    pipe.WriteString("process exit:");
-                                }
-                            }
-                            catch (Exception err)
-                            {
-                                try//if pipe is broken, make it safe
-                                {
-                                    pipe.WriteString(err.ToString());
-                                    pipe.WriteString("process exit:");
-                                }
-                                catch (Exception ignored)
-                                { };
-                            }
-
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        ferrum = null;
-                        Logger.Error(ex.GetAllMessages());
-
-                    }
-                    finally
-                    {
-                        KillAllProcess(ProcessName);
-
-                        ProcessManager.Task = null;
-                    }
-
-                });
-  
-            return pipeName;
-           
-        }
-
-        private static void KillProcess(Process process)
-        {
-            try
-            {
-                Logger.Info("killing process " + process.ProcessName);
-                process.Kill();
-
-            }catch(Exception ex)
-            {
-                Logger.Error(ex.GetAllMessages());
-            }
-        }
-
-        public static void KillAllProcess(String name)
-        {
-            try
-            {
-                Logger.Info("gettingprocess by name " + name);
-                System.Diagnostics.Process[] process = Process.GetProcessesByName(name.Replace(".exe",""));
-                Logger.Info("gettingprocess by name " + name+" found:"+process.Length);
-                process.ToList().ForEach((x) =>
+                Logger.Info(startInfo.FileName +" "+startInfo.Arguments +" process will start at directory "+startInfo.WorkingDirectory);
+                using (Process process = new Process())
                 {
-                    KillProcess(x);
+                    process.StartInfo = startInfo;
+                    
+                   
+                    process.Start();
 
-                });
+                    Logger.Info(startInfo.FileName + " process started with pid:"+process.Id);
+                    return process.Id;
+
+                }
+
+
+
+
             }
             catch (Exception ex)
             {
-                Logger.Error("killing process failed:"+ex.GetAllMessages());
+
+                Logger.Error(ex.GetAllMessages());
+                throw ex;
+
             }
+
+
+
+
+
+
         }
-        public static string Start(string args,AutoResetEvent are)
+
+
+
+
+        public static int Start(string url, string pipename, string hash = "")
         {
-            
+
             Logger.Info("starting ferrum process");
+
             if (!CurrentUser.IsAdministrator())
             {
                 Logger.Error("current user is not in administrators");
                 throw new ApplicationException("current user is not in administrators");
             }
-            
-            return StartFerrum(args,are);
+
+
+            return StartFerrum(url,pipename,hash);
         }
 
 
 
-        public static void Stop()
-        {
-            Logger.Info("stoping ferrum process");
-            
-            if (ferrum!=null)
-            {
-                try
-                {
-                    ferrum.Kill();
-                }catch(Exception ignore)
-                {
 
-                }
-            }
-            KillAllProcess(ProcessName);
-            Logger.Info("stoped service");
-        }
-
-        public static bool IsWorking()
-        {
-            System.Diagnostics.Process[] process = Process.GetProcessesByName(ProcessName.Replace(".exe", ""));
-            return process.Length> 0;
-        }
     }
 }

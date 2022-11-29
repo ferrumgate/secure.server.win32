@@ -197,7 +197,7 @@ PrintPacket(_In_ const BYTE* Packet, _In_ DWORD PacketSize)
         Log(WINTUN_LOG_INFO, L"received IPv%d proto 0x%x packet from %s to %s", IpVersion, Proto, Src, Dst);
 }
 
-
+static int random_initted = 0;
 
 
 
@@ -212,6 +212,11 @@ FerrumStartWinTun()
     while (tryCount--) {
         ferrum_client = malloc(sizeof(ferrum_client_t));
         ZeroMemory(ferrum_client, sizeof(ferrum_client_t));
+        if (!random_initted) {
+            srand(time(NULL));
+            random_initted = 1;
+        }
+
         Wintun = InitializeWintun();
         if (!Wintun)
             return LogError(L"failed to initialize wintun", GetLastError());
@@ -219,10 +224,23 @@ FerrumStartWinTun()
         //WintunSetLogger(ConsoleLogger);
         Log(WINTUN_LOG_INFO, L"wintun library loaded");
 
-        GUID guid = { 0x43dad8f2, 0x3304, 0x4033, { 0x8a, 0x6a, 0xb9, 0x47, 0x0c, 0x10, 0xc5, 0x75 } };
+        //GUID guid = { 0x43dad8f2, 0x3304, 0x4033, { 0x8a, 0x6a, 0xb9, 0x47, 0x0c, 0x10, 0xc5, 0x75 } };
+        GUID guid = { 0x43dad8f2, 0x3304, 0x4033, { rand()%255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255}};
+
+        const char* charset =
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        size_t setlen = strlen(charset);
 
 
-        Adapter = WintunCreateAdapter(L"FerrumGate", L"Secure", &guid);
+        snprintf(ferrum_client->adapterName,30, "ferrum%c%c%c%c%c%c", charset[(rand() % setlen)],
+            charset[(rand() % setlen)], charset[(rand() % setlen)],
+            charset[(rand() % setlen)], charset[(rand() % setlen)],
+            charset[(rand() % setlen)]);
+        
+        wchar_t wadapterName[32] = { 0 };
+        mbstowcs(wadapterName, ferrum_client->adapterName, 30);
+    
+        Adapter = WintunCreateAdapter(wadapterName, L"FerrumGate", &guid);
         if (!Adapter)
         {
             LastError = GetLastError();

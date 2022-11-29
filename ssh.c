@@ -673,6 +673,7 @@ main(int ac, char** av)
 		fprintf(stderr, "loading wintun failed %d\n", result);
 		return 1;
 	}
+	fprintf(stderr, "interface_name:%s\n", ferrum_client->adapterName);
 
 
 #endif
@@ -1908,10 +1909,10 @@ ssh_stdio_confirm(struct ssh *ssh, int id, int success, void *arg)
 	if (!success)
 		fatal("stdio forwarding failed");
 }
-#ifdef FERRUM_WIN32
-//we need to save opened tun name
-static char opened_tun_ifname[64];
-#endif
+//#ifdef FERRUM_WIN32
+////we need to save opened tun name
+//static char opened_tun_ifname[64];
+//#endif
 
 
 static void
@@ -1926,7 +1927,7 @@ ssh_tun_confirm(struct ssh *ssh, int id, int success, void *arg)
 	debug_f("tunnel forward established, id=%d", id);
 	forwarding_success();
 #ifdef FERRUM_WIN32
-	fprintf(stderr, "ferrum_tunnel_opened:%s\n", opened_tun_ifname);
+	fprintf(stderr, "ferrum_tunnel_opened:%s\n", ferrum_client->adapterName);
 	//fflush(stdout);
 #endif
 }
@@ -2179,12 +2180,12 @@ ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 		ssh_init_stdio_forwarding(ssh);
 
 	ssh_init_forwarding(ssh, &tun_fwd_ifname);
-#ifdef FERRUM_WIN32
-	//after finishing created tunnel we need to copy tunnel interface name
-	memset(opened_tun_ifname, 0, sizeof(opened_tun_ifname));
-	if (tun_fwd_ifname && strlen(tun_fwd_ifname))
-		strncpy(opened_tun_ifname, tun_fwd_ifname, sizeof(opened_tun_ifname) - 1);
-#endif
+//#ifdef FERRUM_WIN32
+//	//after finishing created tunnel we need to copy tunnel interface name
+//	memset(opened_tun_ifname, 0, sizeof(opened_tun_ifname));
+//	if (tun_fwd_ifname && strlen(tun_fwd_ifname))
+//		strncpy(opened_tun_ifname, tun_fwd_ifname, sizeof(opened_tun_ifname) - 1);
+//#endif
 
 	if (options.local_command != NULL) {
 		debug3("expanding LocalCommand: %s", options.local_command);
