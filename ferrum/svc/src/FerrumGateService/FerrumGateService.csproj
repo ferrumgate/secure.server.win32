@@ -113,6 +113,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helper\ConfigService.cs" />
     <Compile Include="FerrumGate.cs" />
     <Compile Include="Helper\IPCServer.cs" />
     <Compile Include="Helper\ProcessExtensions.cs" />
@@ -189,6 +190,9 @@
       <Version>3.2.26</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

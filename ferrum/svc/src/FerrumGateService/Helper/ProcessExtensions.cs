@@ -19,6 +19,16 @@ namespace FerrumGate.Helper
 
         #region DllImports
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        static extern bool OpenThreadToken(
+       IntPtr ThreadHandle,
+       uint DesiredAccess,
+       bool OpenAsSelf,
+       out IntPtr TokenHandle);
+
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetCurrentThread();
+
         [DllImport("advapi32.dll", EntryPoint = "CreateProcessAsUser", SetLastError = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern bool CreateProcessAsUser(
             IntPtr hToken,
@@ -65,6 +75,8 @@ namespace FerrumGate.Helper
             int Version,
             ref IntPtr ppSessionInfo,
             ref int pCount);
+
+        
 
         #endregion
 
@@ -265,6 +277,8 @@ namespace FerrumGate.Helper
 
 
         }
+
+       
 
     }
 }

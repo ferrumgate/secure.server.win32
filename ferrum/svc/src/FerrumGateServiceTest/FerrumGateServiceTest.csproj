@@ -54,6 +54,7 @@
     <Compile Include="UnitTestPipeClient.cs" />
     <Compile Include="UnitTestPipeServer.cs" />
     <Compile Include="UnitTestProcessManager.cs" />
+    <Compile Include="UnitTestConfigService.cs" />
     <Compile Include="UnitTestUtil.cs" />
   </ItemGroup>
   <ItemGroup>

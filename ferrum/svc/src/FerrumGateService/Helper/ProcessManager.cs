@@ -79,7 +79,7 @@ namespace FerrumGateService.Helper
                 using (Process process = new Process())
                 {
                     process.StartInfo = startInfo;
-
+                    
 
                     process.Start();
 
@@ -100,6 +100,7 @@ namespace FerrumGateService.Helper
         }
 
         public uint LastProcessId { get; set; }
+        
         public void StartAsClient()
         {
 
@@ -134,6 +135,7 @@ namespace FerrumGateService.Helper
 
         }
 
+       
 
 
 

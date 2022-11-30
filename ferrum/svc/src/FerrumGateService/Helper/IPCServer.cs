@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -22,11 +23,8 @@ namespace FerrumGateService.Helper
         private static CancellationTokenSource cts;
         private static string EncryptionKey;
         
-        public enum Status
-        {
-            Unknown,Exit,Connect, Waiting, Connecting, Settings, Disconnecting
-        }
-        public static Status Where{get;set;}
+       
+
         /**
          * create a server
          */
@@ -35,116 +33,183 @@ namespace FerrumGateService.Helper
             if (IPCServer.currentTask != null)
                 return IPCServer.currentTask;
 
+            try
+            {
+                ConfigService config = new ConfigService(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"config.json"));
+                config.Parse();
+                if (config.Config!=null)
+                {
+                    Logger.Info("config file loaded");
+                }
 
-            IPCServer.currentTask = Task.Run(async () =>
-             {
+                IPCServer.currentTask = Task.Run(async () =>
+                     {
 
-                 //random encryption key
-                 EncryptionKey = Guid.NewGuid().ToString().Replace("-", "");
-                 IPCServer.Where = Status.Exit;
-                 Work = true;
-                 using(cts=new CancellationTokenSource())
-                 while (Work)
-                 {
-                     try
-                         {
-
-                             using (PipeServer server = new PipeServer(pipeName, cts.Token, connectTimeout, readWriteTimeout, maxInstanceCount))
-                         {
-                             IPCServer.Where = Status.Connect;
-                             Logger.Info("waiting for client");
-                             server.WaitForConnection();
+                     //random encryption key
+                         EncryptionKey = Guid.NewGuid().ToString().Replace("-", "");
+                         
+                         Work = true;
+                         using (cts = new CancellationTokenSource())
                              while (Work)
                              {
-                                 Logger.Debug("waiting for command");
-                                 var cmd = server.ReadString();
-                                 Logger.Info(String.Format("command received > {0}", cmd));
-                                 if (cmd == "ping")
+                                 try
                                  {
-                                     server.WriteString("pong");
-                                 }
-                                 else
-                                  if (cmd.StartsWith("hello"))// start a new process
+
+                                     using (PipeServer server = new PipeServer(pipeName, cts.Token, connectTimeout, readWriteTimeout, maxInstanceCount))
                                      {
-                                         IPCServer.Where = Status.Connecting;
-                                         try
+                                         
+                                         Logger.Info("waiting for client");
+                                         server.WaitForConnection();
+                                         while (Work)
                                          {
-                                             var username= server.GetImpersonationUserName();
-                                             Logger.Info("starting session for user "+username);
-                                             var token = Util.EncryptString(IPCServer.EncryptionKey, Guid.NewGuid().ToString());
-                                             var process = new ProcessManager(token);
-                                             process.StartAsClient();
-                                             server.WriteString("ok");
-                                         }
-                                         catch (Exception ex)
-                                         {
-                                             var msg = ex.GetAllMessages();
-                                             server.WriteString("error:" + msg);
-                                             throw ex;
-                                         }
+                                             Logger.Debug("waiting for command");
+                                             var cmd = server.ReadString();
+                                             //Logger.Info(String.Format("command received > {0}", cmd));
+                                             if (cmd == "ping")
+                                             {
+                                                 server.WriteString("pong");
+                                             }
+                                             else
+                                          if (cmd.StartsWith("hello") && false)// start a new process, we are not using
+                                             {
+                                                 
+                                                 try
+                                                 {
+                                                     var username = server.GetImpersonationUserName();
+                                                     Logger.Info("starting session for user " + username);
+                                                     var token = Util.EncryptString(IPCServer.EncryptionKey, Guid.NewGuid().ToString());
+                                                     var process = new ProcessManager(token);
+                                                     process.StartAsClient();
+                                                     server.WriteString("ok");
+                                                 }
+                                                 catch (Exception ex)
+                                                 {
+                                                     var msg = ex.GetAllMessages();
+                                                     server.WriteString("error:" + msg);
+                                                     throw ex;
+                                                 }
 
 
-                                     }else
-                                     if (cmd.StartsWith("connect"))// connect to 
+                                             }
+                                             else
+                                             if (cmd.StartsWith("connectWith") && false)// connect to , we are not using
+                                             {
+                                                 
+                                                 try
+                                                 {
+
+                                                     char[] separators = new char[] { ' ' };
+
+                                                     string[] subs = cmd.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                                                     var sessionKey = subs[1];
+                                                     Logger.Info("starting executor with key");
+                                                     var url = subs[2];
+                                                     var socket = subs[3];
+
+                                                     var guid = Util.DecryptString(IPCServer.EncryptionKey, sessionKey);
+                                                     Guid.Parse(guid);//check if it is a valid guid
+
+                                                     var process = new ProcessManager("");
+                                                     process.StartAsCurrent(url, socket);
+                                                 //server.RunAsClient(process.Start);                                             
+                                                     server.WriteString("ok");
+                                                 }
+                                                 catch (Exception ex)
+                                                 {
+                                                     var msg = ex.GetAllMessages();
+                                                     server.WriteString("error:" + msg);
+                                                     throw ex;
+                                                 }
+
+
+                                             }
+                                             else
+                                             if (cmd.StartsWith("connect"))// connect to ,
+                                             {
+                                                 
+                                                 try
+                                                 {
+
+                                                     char[] separators = new char[] { ' ' };
+
+                                                     string[] subs = cmd.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                                                     
+                                                     var url = subs[1];
+                                                     var socket = subs[2];
+                                                     //check if host is in valid hosts
+                                                     if(config.Config !=null && config.Config.host != url)
+                                                     {
+                                                         throw new ApplicationException(url + " host is not validated");
+                                                     }
+    
+                                                     var process = new ProcessManager("");
+                                                     process.StartAsCurrent(url, socket);
+                                                     //server.RunAsClient(process.Start);                                             
+                                                     server.WriteString("ok");
+                                                 }
+                                                 catch (Exception ex)
+                                                 {
+                                                     var msg = ex.GetAllMessages();
+                                                     server.WriteString("error:" + msg);
+                                                     throw ex;
+                                                 }
+
+
+                                             }else
+                                             if (cmd.StartsWith("config"))// connect to 
+                                             {
+                                                 
+                                                 try
+                                                 {
+
+                                                     var str = config.GetConfig();
+                                                     server.WriteString("config:"+str);
+                                                 }
+                                                 catch (Exception ex)
+                                                 {
+                                                     var msg = ex.GetAllMessages();
+                                                     server.WriteString("error:" + msg);
+                                                     throw ex;
+                                                 }
+
+
+                                             }
+                                             else
+                                             {
+                                                 
+                                                 break;
+
+                                             }
+                                         }
+                                     }
+
+
+
+                                 }
+                                 catch (Exception ex)
                                  {
-                                     IPCServer.Where = Status.Connecting;
-                                         try
-                                         {
-                                             
-                                             char[] separators = new char[] { ' ' };
 
-                                             string[] subs = cmd.Split(separators, StringSplitOptions.RemoveEmptyEntries);
-                                             var sessionKey = subs[1];
-                                             Logger.Info("starting executor with key");
-                                             var url = subs[2];
-                                             var socket = subs[3];
-
-                                             var guid= Util.DecryptString(IPCServer.EncryptionKey, sessionKey);
-                                             Guid.Parse(guid);//check if it is a valid guid
-                                            
-                                             var process = new ProcessManager("");
-                                             process.StartAsCurrent(url,socket);
-                                             //server.RunAsClient(process.Start);                                             
-                                             server.WriteString("ok");
-                                         }
-                                     catch (Exception ex){
-                                             var msg= ex.GetAllMessages();
-                                             server.WriteString("error:" + msg);
-                                             throw ex;
-                                    }
-                                     
-
-                                 }                                
-                                 else
+                                     Logger.Error(ex.GetAllMessages());
+                                     Thread.Sleep(1000);// if any error occures, wait 1s at least
+                                 }
+                                 finally
                                  {
-                                     IPCServer.Where = Status.Unknown;
-                                     break;
 
                                  }
                              }
-                         }
-                         
+
+                         Logger.Info("ipc stopped");
 
 
-                     }
-                     catch (Exception ex)
-                     {
-                         
-                         Logger.Error(ex.GetAllMessages());
-                         Thread.Sleep(1000);// if any error occures, wait 1s at least
-                     }
-                     finally
-                     {
-                       
-                     }
-                 }
-                 
-                 Logger.Info("ipc stopped");
+                     });
 
+            }catch(Exception err)
+            {
+                Logger.Error(err.GetAllMessages());
+            }
+                return IPCServer.currentTask;
+            
 
-             });
-
-            return IPCServer.currentTask;
         }
       
 
