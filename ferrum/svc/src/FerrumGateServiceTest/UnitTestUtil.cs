@@ -64,5 +64,32 @@ namespace FerrumGateServiceTest
             }
         }
 
+        [TestMethod]
+        public void TestEncDec()
+        {
+            var key = (Guid.NewGuid().ToString()).Replace("-", "");
+            var enc=Util.EncryptString(key, "efefda");
+            var efefda = Util.DecryptString(key, enc);
+            Assert.AreEqual(efefda, "efefda");
+
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ApplicationException))]
+        public void TestEncDecThrows()
+        {
+            try
+            {
+                var key = (Guid.NewGuid().ToString()).Replace("-", "");
+                var efefda = Util.DecryptString(key, "YXNkZmFzZGZhc2Rm");
+            }catch(Exception err)
+            {
+                throw err;
+            }
+
+            
+
+        }
+
     }
 }

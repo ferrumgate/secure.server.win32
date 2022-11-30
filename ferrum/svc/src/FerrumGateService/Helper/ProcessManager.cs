@@ -6,19 +6,24 @@ using System.Threading;
 using System.IO;
 using FerrumGateService.Helper.IPC;
 using System.Configuration;
+using FerrumGate.Helper;
 
 namespace FerrumGateService.Helper
 {
     public class ProcessManager
     {
-#if !DEBUG
-        public const string ProcessName = "FerrumGate.exe";
-#else
-        public const string ProcessName = "powershell.exe";
-#endif
-        
 
-        private static void CheckFileHash(string hash)
+        public const string ProcessName = "FerrumGate.exe";
+
+
+       private string sessionKey;
+       public  ProcessManager(string sessionKey)
+        {
+            this.sessionKey = sessionKey;
+        }
+
+
+        private  void CheckFileHash(string hash)
         {
 
             if (string.IsNullOrEmpty(hash))
@@ -35,58 +40,53 @@ namespace FerrumGateService.Helper
 
         }
 
-        private static int StartFerrum(string url, string pipename,string hash="")
+      
+
+
+
+
+        public  int StartAsCurrent(string url, string pipename)
         {
 
-
-
-
+            Logger.Info("starting ferrum process");
 
             try // we need this if pipe is successfull
             {
 
-                CheckFileHash(hash);
+                
 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
-#if !DEBUG
-  startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..\\..\\..\\..\\..", ProcessName);
-                var workerJS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\", "worker.js");
-                            startInfo.Arguments = workerJS+" --url="+url+" --socket="+pipename;
 
-                startInfo.EnvironmentVariables.Add("ELECTRON_RUN_AS_NODE", "true");
-                startInfo.CreateNoWindow = true;
-                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.UseShellExecute = false;
-                startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..");
+                  startInfo.FileName = "\""+Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..\\..\\..\\..\\..", ProcessName)+"\"" ;
+                                var workerJS = "\"" + Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\", "worker.js")+ "\"" ;
+                                            startInfo.Arguments = workerJS+" --url="+url+" --socket="+pipename;
 
-
-#else
-                startInfo.FileName = ProcessName;
-#endif
+                                startInfo.EnvironmentVariables.Add("ELECTRON_RUN_AS_NODE", "true");
+                                startInfo.CreateNoWindow = true;
+                                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                                startInfo.UseShellExecute = false;
+                                startInfo.WorkingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..");
 
 
 
 
 
 
-                //startInfo.FileName = "C:/Users/test/Desktop/ferrum/secure.client/node_modules/.bin/electron.cmd";
-                //startInfo.Arguments = "C:/Users/test/Desktop/ferrum/secure.client/build/src --win32";
-                //startInfo.WorkingDirectory = "C:/Users/test/Desktop/ferrum/secure.client/build/src";
+               
+                
 
-                Logger.Info(startInfo.FileName +" "+startInfo.Arguments +" process will start at directory "+startInfo.WorkingDirectory);
+                Logger.Info(startInfo.FileName + " " + startInfo.Arguments + " process will start at directory " + startInfo.WorkingDirectory);
                 using (Process process = new Process())
                 {
                     process.StartInfo = startInfo;
-                    
-                   
+
+
                     process.Start();
 
                     Logger.Info(startInfo.FileName + " process started with pid:"+process.Id);
                     return process.Id;
 
                 }
-
-
 
 
             }
@@ -97,30 +97,41 @@ namespace FerrumGateService.Helper
                 throw ex;
 
             }
-
-
-
-
-
-
         }
 
-
-
-
-        public static int Start(string url, string pipename, string hash = "")
+        public uint LastProcessId { get; set; }
+        public void StartAsClient()
         {
 
-            Logger.Info("starting ferrum process");
 
-            if (!CurrentUser.IsAdministrator())
+
+
+
+            try // we need this if pipe is successfull
             {
-                Logger.Error("current user is not in administrators");
-                throw new ApplicationException("current user is not in administrators");
+
+                
+
+
+                var fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..", ProcessName);          
+                
+                
+               
+                var workingDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..");
+                
+                this.LastProcessId=ProcessExtensions.StartProcessAsCurrentUser(fileName, "\""+fileName+ "\" --token="+this.sessionKey, workingDirectory, true);
+               
+                Logger.Info(fileName + " " + " process will started at directory " + workingDirectory+ " pid:"+this.LastProcessId);
+
+            }
+            catch (Exception ex)
+            {
+
+                Logger.Error(ex.GetAllMessages());
+                throw ex;
+
             }
 
-
-            return StartFerrum(url,pipename,hash);
         }
 
 

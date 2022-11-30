@@ -115,6 +115,7 @@
   <ItemGroup>
     <Compile Include="FerrumGate.cs" />
     <Compile Include="Helper\IPCServer.cs" />
+    <Compile Include="Helper\ProcessExtensions.cs" />
     <Compile Include="Helper\ProcessManager.cs" />
     <Compile Include="Service.cs">
       <SubType>Component</SubType>
