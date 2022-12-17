@@ -60,7 +60,7 @@ extern "C" {
 		WINTUN_SESSION_HANDLE session;
 
 		HANDLE session_event;
-
+		char adapterName[32];
 		//file descriptors for wintun adaptation
 		struct {
 			int read[2];

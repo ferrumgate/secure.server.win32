@@ -28,13 +28,15 @@ namespace FerrumGateServiceTest
 
             var task = IPCServer.Start("xman", 10, 5000);
             Thread.Sleep(1000);
-            Assert.IsTrue(IPCServer.Where == IPCServer.Status.Connect);
+            
             using(var cs=new CancellationTokenSource())
             using(var client=new PipeClient("xman", cs.Token))
             {
-                client.WriteString("connect -X ferrum@1.2.3.4");
+                client.WriteString("connect 123 324");
                 Thread.Sleep(100);
-                Assert.IsTrue(IPCServer.Where == IPCServer.Status.Connecting);
+                
+               var result= client.ReadString();
+                Assert.AreEqual(result, "ok");
                 
             }
 

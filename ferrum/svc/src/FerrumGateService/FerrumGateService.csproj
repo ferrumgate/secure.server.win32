@@ -113,20 +113,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helper\ConfigService.cs" />
     <Compile Include="FerrumGate.cs" />
-    <Compile Include="Helper\NetworkManager.cs" />
+    <Compile Include="Helper\IPCServer.cs" />
+    <Compile Include="Helper\ProcessExtensions.cs" />
+    <Compile Include="Helper\ProcessManager.cs" />
     <Compile Include="Service.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Service.Designer.cs">
       <DependentUpon>Service.cs</DependentUpon>
     </Compile>
-    <Compile Include="Helper\IPCServer.cs" />
     <Compile Include="Helper\IPC\PipeClient.cs" />
     <Compile Include="Helper\IPC\PipeServer.cs" />
     <Compile Include="Helper\IPC\StreamReadWriter.cs" />
     <Compile Include="Helper\Logger.cs" />
-    <Compile Include="Helper\ProcessManager.cs" />
     <Compile Include="Helper\CurrentUser.cs" />
     <Compile Include="Helper\Util.cs" />
     <Compile Include="Program.cs" />
@@ -189,6 +190,9 @@
       <Version>3.2.26</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

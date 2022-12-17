@@ -19,8 +19,9 @@ namespace FerrumGateService
 
             try
             {
-                
+               
                 IPCServer.Start("ferrumgate", 10, int.MaxValue, int.MaxValue);
+                
 
             }
             catch (Exception ex)

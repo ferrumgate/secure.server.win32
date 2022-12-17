@@ -66,9 +66,9 @@ namespace FerrumGateService.Helper.IPC
             pSecure.SetAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), PipeAccessRights.FullControl, System.Security.AccessControl.AccessControlType.Allow));
             pSecure.SetAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), PipeAccessRights.FullControl, System.Security.AccessControl.AccessControlType.Allow));
             pSecure.SetAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null), PipeAccessRights.ReadWrite, System.Security.AccessControl.AccessControlType.Allow));
+
+
             
-
-
             var pipeServer = new NamedPipeServerStream(name, PipeDirection.InOut, numberOfInstances, PipeTransmissionMode.Message, PipeOptions.Asynchronous, 1 * 1024 * 1024, 1 * 1024 * 1024, pSecure);
             this.connectTimeout = connectTimeout;
             this.readWriteTimeout = readWriteTimeout;
@@ -93,13 +93,23 @@ namespace FerrumGateService.Helper.IPC
             {
                 throw new TimeoutException("Connection accept timeout");
             }
+           
             
 
         }
 
+        public void RunAsClient(PipeStreamImpersonationWorker worker)
+        {
+            data.Server.RunAsClient(worker);
+        }
+        public string GetImpersonationUserName()
+        {
+           return data.Server.GetImpersonationUserName();
+        }
 
 
-       
+
+
 
 
         ~PipeServer()

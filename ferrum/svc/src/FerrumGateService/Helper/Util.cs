@@ -139,28 +139,90 @@ namespace FerrumGateService.Helper
         }
 
 
-        public static string ComputeSHA256(string plainText)
+       
+        public static string ComputeSHA256(Stream ms)
         {
             // Salt size
             using (SHA256 mySHA256 = SHA256.Create())
             {
-                using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(plainText)))
-                {
+               
+                
                     var data = mySHA256.ComputeHash(ms);
                     return ByteArrayToString(data);//hexencoded
-                }
+                
             }
         }
-        public static bool VerifySHA256(string plainText,                               
+        public static bool VerifySHA256(Stream datas,                               
                                   string hashValue)
         {
             // Hex-encoded hash
-            var expectedHashString = ComputeSHA256(plainText);
+            var expectedHashString = ComputeSHA256(datas);
             return (hashValue == expectedHashString);
         }
 
+        public static string EncryptString(string key, string plainText)
+        {
+            byte[] iv = new byte[16];
+            byte[] array;
 
-      
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                aes.IV = iv;
+
+                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
+                        {
+                            streamWriter.Write(plainText);
+                        }
+
+                        array = memoryStream.ToArray();
+                    }
+                }
+            }
+
+            return BitConverter.ToString(array).Replace("-","");
+        }
+
+        public static string DecryptString(string key, string cipherText)
+        {
+            byte[] iv = new byte[16];
+            byte[] buffer = 
+            
+                Enumerable.Range(0, cipherText.Length)
+                                 .Where(x => x % 2 == 0)
+                                 .Select(x => Convert.ToByte(cipherText.Substring(x, 2), 16))
+                                 .ToArray();
+            
+
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                aes.IV = iv;
+                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                using (MemoryStream memoryStream = new MemoryStream(buffer))
+                {
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                        {
+                            return streamReader.ReadToEnd();
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
+
 
     }
     public static class Extensions
