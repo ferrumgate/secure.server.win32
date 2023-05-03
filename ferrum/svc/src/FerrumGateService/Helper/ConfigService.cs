@@ -11,7 +11,8 @@ namespace FerrumGateService
     public class Config
     {
 
-        public String host { get; set; }
+        public List<String> hosts { get; set; }
+        
     }
     public class ConfigService
     {
@@ -21,33 +22,19 @@ namespace FerrumGateService
         public ConfigService(String configFile)
         {
             this.configFile = configFile;
+            this.Config = new Config() { hosts = new List<string>() };
+
             
         }
         public void Parse()
         {
             if (File.Exists(this.configFile)){
-               this.Config= JsonConvert.DeserializeObject<Config>(File.ReadAllText(this.configFile),
-                   new JsonSerializerSettings
-                   {
-                       MissingMemberHandling = MissingMemberHandling.Ignore,                       
-                   });
+                var items = File.ReadAllText(this.configFile).Split(new string[] { "\r\n","\r","\n" }, StringSplitOptions.RemoveEmptyEntries);
+                this.Config.hosts.AddRange(items);
+                  
             }
         }
-        public void Write(Config config)
-        {
-
-            File.WriteAllText(this.configFile, JsonConvert.SerializeObject(config));
-            this.Config = config;
-            
-        }
-        public string GetConfig()
-        {
-            if (this.Config!=null)
-            {
-                return JsonConvert.SerializeObject(this.Config);
-            }
-            return "";
-        }
+        
 
     }
 }

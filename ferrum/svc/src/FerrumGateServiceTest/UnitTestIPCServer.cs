@@ -32,6 +32,7 @@ namespace FerrumGateServiceTest
             using(var cs=new CancellationTokenSource())
             using(var client=new PipeClient("xman", cs.Token))
             {
+
                 client.WriteString("connect 123 324");
                 Thread.Sleep(100);
                 
