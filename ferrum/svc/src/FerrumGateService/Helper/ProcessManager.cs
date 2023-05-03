@@ -7,6 +7,7 @@ using System.IO;
 using FerrumGateService.Helper.IPC;
 using System.Configuration;
 using FerrumGate.Helper;
+using System.Management;
 
 namespace FerrumGateService.Helper
 {
@@ -57,7 +58,7 @@ namespace FerrumGateService.Helper
 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
 
-                  startInfo.FileName = "\""+Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"..\\..\\..\\..\\..", ProcessName)+"\"" ;
+                  startInfo.FileName = "\""+ProcessManager.ExecuteFileName()+"\"" ;
                                 var workerJS = "\"" + Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\", "worker.js")+ "\"" ;
                                             startInfo.Arguments = workerJS+" --url="+url+" --socket="+pipename;
 
@@ -111,10 +112,10 @@ namespace FerrumGateService.Helper
             try // we need this if pipe is successfull
             {
 
-                
 
 
-                var fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..", ProcessName);          
+
+                var fileName = ProcessManager.ExecuteFileName();
                 
                 
                
@@ -134,8 +135,43 @@ namespace FerrumGateService.Helper
             }
 
         }
+        public static string ExecuteFileName()
+        {
+            return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\..\\..\\..\\..", ProcessName));
+        }
 
        
+        public static string GetProcessPath(int id)
+        {
+            try
+            {
+                //var process = Process.GetProcessById(id);
+                //if (process == null)
+                //    throw new ApplicationException("Process not found ");
+                //return process.MainModule.FileName;                //wmic process where "ProcessID=id" get ExecutablePath
+                var wmiQueryString = "SELECT ProcessId, ExecutablePath, CommandLine FROM Win32_Process where ProcessId="+id;
+                using (var searcher = new ManagementObjectSearcher(wmiQueryString))
+                using (var results = searcher.Get())
+                {
+                    
+                    foreach (var item in results)
+                    {
+                        // Do what you want with the Process, Path, and CommandLine
+                        var path= item["ExecutablePath"] as String;
+                        if (!String.IsNullOrEmpty(path))
+                            return path;
+                    }
+                }
+                throw new ApplicationException("Process not found ");
+
+
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.GetAllMessages());
+                throw ex;
+            }
+        }
 
 
 

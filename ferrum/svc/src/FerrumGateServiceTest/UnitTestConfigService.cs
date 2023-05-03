@@ -14,12 +14,12 @@ namespace FerrumGateServiceTest
         [TestMethod]
         public void TestParseWrite()
         {
-            var config = new ConfigService("config.json");
-            config.Write(new Config { host ="deneme"});
+            File.WriteAllLines("tmp.txt", new string[] { "test", "test2" });
+            var config = new ConfigService("tmp.txt");
+            config.Parse();
+            Assert.IsTrue(config.Config.hosts.Count == 2);
 
-            var config2 = new ConfigService("config.json");
-            config2.Parse();
-            Assert.AreEqual(config2.Config.host, "deneme");
+
 
         }
 

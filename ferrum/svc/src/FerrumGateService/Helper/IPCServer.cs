@@ -35,7 +35,7 @@ namespace FerrumGateService.Helper
 
             try
             {
-                ConfigService config = new ConfigService(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"config.json"));
+                ConfigService config = new ConfigService(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"secure.hosts"));
                 config.Parse();
                 if (config.Config!=null)
                 {
@@ -60,11 +60,26 @@ namespace FerrumGateService.Helper
                                          
                                          Logger.Info("waiting for client");
                                          server.WaitForConnection();
+                                         //security check, only our program must connect us
+                                         var processId=server.GetClientProcessId();
+                                         Logger.Info("connected process Id " +processId);
+                                         var connectedClientPath = ProcessManager.GetProcessPath(processId);
+                                         Logger.Info("connected process path is " + connectedClientPath);
+                                         //var connectedClientSha256 = Util.GetFileSha256(path);
+                                         var ourClientPath = ProcessManager.ExecuteFileName();
+                                         Logger.Info("our client path " + ourClientPath);
+                                         //var ourClientSha256 = Util.GetFileSha256(ourClientPath);
+                                         if (connectedClientPath != ourClientPath)
+                                         {
+                                             Logger.Error("this is not our client " + connectedClientPath + " "+ ourClientPath);
+                                             throw new ApplicationException("You are not allowed to connect");
+                                         }
+                                         Logger.Info("this is our client " + ourClientPath);
                                          while (Work)
                                          {
                                              Logger.Debug("waiting for command");
                                              var cmd = server.ReadString();
-                                             //Logger.Info(String.Format("command received > {0}", cmd));
+                                             Logger.Info(String.Format("command received > {0}", cmd));
                                              if (cmd == "ping")
                                              {
                                                  server.WriteString("pong");
@@ -137,7 +152,7 @@ namespace FerrumGateService.Helper
                                                      var url = subs[1];
                                                      var socket = subs[2];
                                                      //check if host is in valid hosts
-                                                     if(config.Config !=null && config.Config.host != url)
+                                                     if(config.Config.hosts.Count>0 && !config.Config.hosts.Contains(url))
                                                      {
                                                          throw new ApplicationException(url + " host is not validated");
                                                      }
@@ -161,13 +176,12 @@ namespace FerrumGateService.Helper
                                                  
                                                  try
                                                  {
-
-                                                     var str = config.GetConfig();
-                                                     server.WriteString("config:"+str);
+                                                     
+                                                     server.WriteString("config:");
                                                  }
                                                  catch (Exception ex)
                                                  {
-                                                     var msg = ex.GetAllMessages();
+                                                    var msg = ex.GetAllMessages();
                                                      server.WriteString("error:" + msg);
                                                      throw ex;
                                                  }

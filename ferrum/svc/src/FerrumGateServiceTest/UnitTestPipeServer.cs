@@ -158,6 +158,8 @@ namespace FerrumGateServiceTest
                 using (PipeServer server = new PipeServer(pipeName, cts.Token, 5000, 5000))
                 {
                     server.WaitForConnection();
+                    var processId= server.GetClientProcessId();
+                    Assert.IsTrue(processId > 0);
                     var data = server.ReadString();
                     Assert.AreEqual(data, "merhaba");
                     server.WriteString("hello world");
@@ -168,6 +170,7 @@ namespace FerrumGateServiceTest
 
             NamedPipeClientStream client = new NamedPipeClientStream(pipeName);
             client.Connect(1000);
+
             SendDataToServer(client, "merhaba");
             Helper helper = new Helper();
             byte[] readBuffer = new byte[4096];

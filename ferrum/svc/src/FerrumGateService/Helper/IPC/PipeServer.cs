@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
@@ -17,7 +18,25 @@ namespace FerrumGateService.Helper.IPC
      /// </summary>
     public class PipeServer:IDisposable
     {
-        
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool GetNamedPipeClientProcessId(IntPtr Pipe, out int ClientProcessId);
+
+        public int GetClientProcessId()
+        {
+            var hPipe = this.data.Server.SafePipeHandle.DangerousGetHandle();
+
+            if (GetNamedPipeClientProcessId(hPipe, out var clientProcessId))
+            {
+                return clientProcessId;
+            }
+            else
+            {
+                var error = Marshal.GetLastWin32Error();
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Object and data holder for named pipes
         /// </summary>
@@ -97,6 +116,7 @@ namespace FerrumGateService.Helper.IPC
             
 
         }
+
 
         public void RunAsClient(PipeStreamImpersonationWorker worker)
         {

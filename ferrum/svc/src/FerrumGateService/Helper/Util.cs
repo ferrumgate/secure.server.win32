@@ -159,6 +159,15 @@ namespace FerrumGateService.Helper
             var expectedHashString = ComputeSHA256(datas);
             return (hashValue == expectedHashString);
         }
+        public static string GetFileSha256(string file)
+        {
+            using (FileStream stream = File.OpenRead(file))
+            {
+                var sha = new SHA256Managed();
+                byte[] checksum = sha.ComputeHash(stream);
+                return BitConverter.ToString(checksum).Replace("-", String.Empty);
+            }
+        }
 
         public static string EncryptString(string key, string plainText)
         {
@@ -244,5 +253,6 @@ namespace FerrumGateService.Helper
 
             return string.Join("->",messages);
         }
+       
     }
 }
